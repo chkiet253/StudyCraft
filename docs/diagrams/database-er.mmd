@@ -1,0 +1,201 @@
+erDiagram
+    %% Proposed 2026-10-07. Detailed constraints/defaults: ../architecture/database-schema.md.
+    %% Relationships below are real foreign keys; dotted lines mean non-identifying ER relationships.
+    %% JSON source-ID arrays, runs.result_ids and requests.result_ids are logical references validated by the service.
+    %% Optional typed event/history parents are mutually exclusive according to kind and CHECK constraints.
+
+    workspaces {
+        uuid id PK
+        text subject UK "english; one workspace MVP"
+        text method "short_writing"
+        varchar goal_text "nullable"
+        date deadline "nullable"
+        jsonb learner_profile
+        bigint version
+        timestamptz updated_at
+    }
+    catalog_materials {
+        uuid id PK
+        varchar title
+        varchar description
+        varchar content "nullable"
+        timestamptz updated_at
+    }
+    writing_templates {
+        uuid id PK
+        varchar prompt
+    }
+    materials {
+        uuid id PK
+        uuid workspace_id FK "scoped UNIQUE with id"
+        uuid catalog_id FK "nullable; unique per workspace"
+        varchar title
+        varchar content "nullable"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    activities {
+        uuid id PK
+        uuid workspace_id FK
+        varchar title
+        text planned_period "proposed day or week"
+        date planned_for "nullable; Monday for week"
+        text status "planned completed deferred"
+        timestamptz updated_at
+    }
+    requests {
+        uuid workspace_id PK,FK
+        uuid request_id PK
+        text tool
+        text payload_hash
+        text state "in_progress completed"
+        smallint http_status "nullable"
+        varchar error_code "nullable; sanitized"
+        boolean error_retryable
+        jsonb response_json "always NULL for chat"
+        uuid_array result_ids "logical references"
+        timestamptz created_at
+        timestamptz completed_at "nullable"
+    }
+    runs {
+        uuid id PK,FK "equals request_id"
+        uuid workspace_id FK
+        text operation FK "part of scoped receipt FK"
+        text status "running succeeded failed interrupted"
+        varchar model "nullable"
+        varchar prompt_version
+        smallint attempts
+        boolean context_truncated
+        jsonb context_metadata "IDs and metadata only"
+        uuid_array result_ids "logical references"
+        timestamptz started_at
+        timestamptz finished_at "nullable"
+    }
+    exercises {
+        uuid id PK
+        uuid workspace_id FK
+        varchar prompt
+        text origin "user or template"
+        uuid template_id FK "nullable"
+        uuid material_id FK "nullable; scoped"
+        jsonb material_snapshot "nullable; immutable"
+        timestamptz created_at
+    }
+    submissions {
+        uuid id PK
+        uuid workspace_id FK
+        uuid exercise_id FK
+        uuid revision_of FK "nullable; same exercise"
+        varchar text "immutable"
+        smallint word_count
+        timestamptz created_at
+    }
+    feedback {
+        uuid id PK
+        uuid workspace_id FK
+        uuid submission_id FK
+        uuid run_id FK,UK
+        text rubric_version
+        jsonb data "validated CorrectionData"
+        varchar corrected_text "server-applied edits"
+        timestamptz created_at
+    }
+    learning_reports {
+        uuid id PK
+        uuid workspace_id FK
+        uuid source_run_id FK
+        text period "day or week"
+        date start_date
+        date end_date
+        varchar statement "short user report"
+        text origin "user_report"
+        timestamptz created_at
+    }
+    learning_events {
+        uuid id PK
+        uuid workspace_id FK
+        text kind
+        uuid submission_id FK "nullable"
+        uuid feedback_id FK "nullable"
+        uuid activity_id FK "nullable"
+        uuid entity_id "generated from one typed reference"
+        text before_status "nullable"
+        text after_status "nullable"
+        timestamptz occurred_at
+    }
+    journals {
+        uuid id PK
+        uuid workspace_id FK
+        text period "day or week"
+        date start_date
+        date end_date
+        int current_revision FK "deferred scoped pointer"
+    }
+    journal_revisions {
+        uuid journal_id PK,FK
+        int revision PK
+        uuid workspace_id FK
+        jsonb content "immutable JournalContent"
+        jsonb source_report_ids "logical references"
+        jsonb source_event_ids "logical references"
+        jsonb source_correction_ids "logical references"
+        text source_signature
+        text editor "ai or user_correction"
+        timestamptz updated_at "snapshot creation time"
+    }
+    journal_corrections {
+        uuid id PK
+        uuid workspace_id FK
+        uuid journal_id FK
+        int base_revision FK "same journal and workspace"
+        text period
+        date start_date
+        date end_date
+        varchar instruction "explicit correction only"
+        timestamptz created_at
+    }
+    history_index {
+        bigint id PK "identity cursor"
+        uuid workspace_id FK
+        text kind
+        uuid exercise_id FK "nullable"
+        uuid submission_id FK "nullable"
+        uuid feedback_id FK "nullable"
+        uuid journal_id FK "nullable"
+        int journal_revision FK "nullable; exact version"
+        uuid entity_id "generated from one typed reference"
+        timestamptz created_at
+    }
+
+    workspaces ||..o{ materials : "FK workspace"
+    workspaces ||..o{ activities : "FK workspace"
+    workspaces ||--o{ requests : "FK workspace"
+    workspaces ||..o{ runs : "FK workspace"
+    workspaces ||..o{ exercises : "FK workspace"
+    workspaces ||..o{ submissions : "FK workspace"
+    workspaces ||..o{ feedback : "FK workspace"
+    workspaces ||..o{ learning_reports : "FK workspace"
+    workspaces ||..o{ learning_events : "FK workspace"
+    workspaces ||..o{ journals : "FK workspace"
+    workspaces ||..o{ journal_revisions : "FK workspace"
+    workspaces ||..o{ journal_corrections : "FK workspace"
+    workspaces ||..o{ history_index : "FK workspace"
+    catalog_materials |o..o{ materials : "catalog copy"
+    writing_templates |o..o{ exercises : "template origin"
+    materials |o..o{ exercises : "material snapshot source"
+    exercises ||..o{ submissions : "same workspace"
+    submissions |o..o{ submissions : "revision_of same exercise"
+    submissions ||..o{ feedback : "correction results"
+    requests ||..o| runs : "same workspace request_id and tool"
+    runs ||..o| feedback : "unique run_id"
+    runs ||..o{ learning_reports : "chat source run max 3"
+    submissions |o..o| learning_events : "one submission_saved"
+    feedback |o..o| learning_events : "one feedback_saved"
+    activities |o..o{ learning_events : "status transitions"
+    journals ||--|{ journal_revisions : "immutable versions"
+    journal_revisions ||..o| journals : "deferred current pointer"
+    journal_revisions ||..o{ journal_corrections : "scoped base_revision"
+    exercises |o..o| history_index : "one exercise item"
+    submissions |o..o| history_index : "one submission item"
+    feedback |o..o| history_index : "one feedback item"
+    journal_revisions |o..o| history_index : "one item per revision"

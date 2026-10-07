@@ -1,0 +1,36 @@
+flowchart LR
+    USER["Người học"] --> BROWSER
+    subgraph MACHINE["Máy cá nhân - loopback"]
+        BROWSER["Trình duyệt<br/>Tài liệu - Luyện viết/Kết quả - Chat - Nhật ký<br/>Chat tạm trong RAM"]
+        subgraph MONOLITH["FastAPI monolith - một Uvicorn worker"]
+            WEB["Web/API cùng origin<br/>Host - Origin - session - CSRF"]
+            SERVICES["Nghiệp vụ<br/>Hồ sơ - tài liệu - hoạt động - bài - lịch sử"]
+            RUNNER["Runner giới hạn<br/>Sửa bài - chat - nhật ký - đính chính"]
+            CONTEXT["Context theo tác vụ<br/>Snapshot - nguồn đúng kỳ"]
+            VALIDATE["Validators<br/>JSON - trích đoạn - quyền - phiên bản"]
+            STORE["Persistence<br/>Transaction ngắn - receipt - run state"]
+            ADAPTER["LocalModelClient"]
+            CACHE["RAM cache<br/>Reply chat tối đa 10 phút"]
+            LOGS["Log metadata<br/>Không nội dung hoặc secrets"]
+            FAKE["Fake adapter<br/>Chỉ tests/demo"]
+        end
+        DB[("PostgreSQL<br/>Hồ sơ - bài - phản hồi - ghi chú<br/>Nhật ký và phiên bản - metadata")]
+        LLM["Runtime model local<br/>LM Studio là đề xuất<br/>Qwen 4B/7B chưa chọn phiên bản"]
+    end
+    BROWSER <-->|"HTTP HTML/JSON - chờ kết quả"| WEB
+    WEB --> SERVICES
+    SERVICES --> STORE
+    SERVICES --> RUNNER
+    RUNNER --> STORE
+    RUNNER --> CONTEXT
+    CONTEXT --> ADAPTER
+    ADAPTER <-->|"HTTP JSON loopback - async await"| LLM
+    ADAPTER -.->|"Chế độ fake"| FAKE
+    ADAPTER --> VALIDATE
+    VALIDATE --> STORE
+    STORE <-->|"PostgreSQL TCP loopback"| DB
+    RUNNER --> CACHE
+    WEB --> CACHE
+    WEB --> LOGS
+    RUNNER --> LOGS
+
