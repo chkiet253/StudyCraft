@@ -1,5 +1,7 @@
 # StudyCraft — Thiết kế schema PostgreSQL MVP
 
+> **Chưa đồng bộ SPEC v3 (2026-10-08):** DDL bên dưới vẫn là baseline trước quyết định lưu chat và giới hạn từ theo loại bài. Các quy tắc 16 bảng/chat RAM/trần 300 từ đã bị thay thế bởi [SPEC §6/§9](../SPEC.md). I-03/I-05 phải bổ sung policy snapshot, chat_threads/chat_messages, constraints và indexes trước khi dùng DDL này để triển khai.
+
 **Status: Proposed — 2026-10-07.** Nguồn: [PRD](../requirements/prd.md), [US-001–US-018](../requirements/user-stories.md), [system design](system-design.md), [SPEC §6/§9](../SPEC.md), [ADR 002](adr/002-postgres-durable-records.md) và [ADR 005](adr/005-ephemeral-chat-versioned-journals.md). Đây là thiết kế bàn giao, chưa phải migration đã chạy.
 
 **Bổ sung HTTP contract — 2026-10-08:** [OpenAPI đề xuất](../api/openapi.json) ánh xạ Idempotency-Key → request_id nội bộ và Problem → Error metadata; bổ sung INTERNAL_ERROR/HTTP 500 cho receipt/run đã claim. Lỗi transport 400/405/413/415 bị chặn trước claim, không lưu receipt. Chưa có migration thực thi.
@@ -11,7 +13,7 @@
 - Mọi cột không có DEFAULT phải được caller cung cấp nếu NOT NULL. Cột nullable không có DEFAULT mặc định NULL. `updated_at` do service cập nhật trong cùng transaction; DEFAULT chỉ áp dụng lúc INSERT.
 - Timestamps dùng `timestamptz`; API xuất ISO 8601. Ngày nghiệp vụ dùng `date`, timezone `Asia/Ho_Chi_Minh`, tuần thứ Hai–Chủ nhật theo giả định SPEC A05. Không chuyển bài gốc sang dạng đã trim/normalize.
 - Giới hạn từ/ký tự/nguồn kế thừa các giả định SPEC; không phải chuẩn TOEIC/IELTS. VARCHAR giới hạn ký tự, không phải UTF-8 bytes; giới hạn context bytes kiểm ở ứng dụng.
-- **Khoảng trống US-003:** SPEC `ActivityData` chỉ có `planned_for`, chưa biểu diễn ngày/tuần. Đề xuất thêm `planned_period: day|week`, mặc định `day`; với `week`, `planned_for` là thứ Hai. Khi có ngày phải có period; NULL ngày là chưa lên lịch. Trước triển khai, cập nhật schema input/output `ActivityData` trong SPEC, frontend và tests cùng lúc; không âm thầm hiểu mọi ngày thứ Hai là việc theo tuần.
+- **US-003 — đã đồng bộ thiết kế ở P01:** planned_period: day|week có mặc định day. OpenAPI ActivityInputData cho phép bỏ trường này; adapter phải điền day trước hash/gọi tool. SPEC ActivityData nội bộ và HTTP output bắt buộc có planned_period. Với week, planned_for là thứ Hai; NULL ngày là chưa lên lịch. Frontend/tests triển khai theo cùng contract; không âm thầm hiểu mọi ngày thứ Hai là việc theo tuần. Chưa có implementation.
 - **Bổ sung nội bộ DB:** các FK có `workspace_id`; typed entity references cho events/history; `requests.error_code/error_retryable`; `runs.context_truncated`. Không thêm trường công khai ngoài thay đổi ActivityData nêu trên.
 - Tên `entity_id` vẫn có trong API/SPEC; DB sinh từ đúng một typed reference. JSON source-ID lists giữ theo SPEC, được kiểm tồn tại/phạm vi bằng service; chúng không có FK từng phần tử.
 
@@ -108,7 +110,7 @@ CREATE TABLE activities (
 );
 ```
 
-planned_period là bổ sung đề xuất ở mục 1. Status chỉ thay theo thao tác trực tiếp. Không có auto-complete khi nhận feedback.
+planned_period theo contract đã đồng bộ ở mục 1. Status chỉ thay theo thao tác trực tiếp. Không có auto-complete khi nhận feedback.
 
 ### 2.6. requests — receipt cho thao tác ghi và idempotency
 
@@ -428,7 +430,7 @@ Immutable. Một history item/journal revision. API adapter đọc đúng artifa
 - Journal 1→N revisions, có đúng một current_revision tồn tại khi COMMIT. Correction tham chiếu đúng revision gốc của cùng journal/workspace; bản đính chính mới là revision kế tiếp.
 - Events trỏ đúng một submission/feedback/activity; history trỏ đúng một exercise/submission/feedback/journal revision. Không FK kiểu “ID tùy ý trong bất kỳ bảng nào”.
 - Mọi JOIN/UPDATE/SELECT của service phải dùng workspace_id từ session đã kiểm, không chỉ UUID client gửi. FK ghép bảo vệ liên kết ghi, không tự bảo vệ quyền đọc.
-- `Workspace.goal` dựng từ goal_text/deadline; `Activity.data` dựng từ title/planned_period/planned_for/status sau thay đổi contract. `Journal` ghép journal header + revision snapshot, tính status khi đọc. `HistoryItem.data` lấy từ đúng bảng/đúng revision, không dùng bản nhật ký hiện tại thay bản lịch sử.
+- `Workspace.goal` dựng từ goal_text/deadline; `Activity.data` dựng từ title/planned_period/planned_for/status theo contract đã đồng bộ. `Journal` ghép journal header + revision snapshot, tính status khi đọc. `HistoryItem.data` lấy từ đúng bảng/đúng revision, không dùng bản nhật ký hiện tại thay bản lịch sử.
 - source-ID arrays và result_ids là liên kết logic do service kiểm. Không có FK tự động bên trong JSONB/UUID arrays; kiểm tồn tại, distinct, đúng workspace và đúng tool. Giữ arrays vì nguồn giới hạn theo SPEC và không có truy vấn reverse-source trong MVP; chuyển thành link tables khi thật sự cần FK từng nguồn/truy vấn ngược.
 
 ## 4. Bất biến và transaction contracts
@@ -442,7 +444,7 @@ Immutable. Một history item/journal revision. API adapter đọc đúng artifa
 - Có report ngày rõ mới INSERT; tuần chuẩn hóa thứ Hai–Chủ nhật, không tự chia cho ngày. Không lưu việc dự định hoặc kỳ bắt đầu trong tương lai như việc đã học.
 - Correction period/start/end phải bằng header journal; base_revision phải là current_revision đã kiểm. Cung cấp mọi notes liên quan theo `(created_at,id)`, mới hơn ưu tiên khi cùng nội dung; chưa có khóa nội dung để DB tự quyết định notes nào tương đương.
 - source_*_ids là toàn bộ nguồn cung cấp cho tổng hợp, không chỉ used_*_ids model nêu. Không nguồn quá giới hạn bị âm thầm bỏ; quá 500/1000/100 → CONTEXT_LIMIT, không commit bản mới.
-- error_code thuộc Error enum của SPEC và INTERNAL_ERROR bổ sung theo OpenAPI đề xuất. INTERNAL_ERROR sau claim kết thúc receipt HTTP 500/run failed khi DB khỏe; nếu success đã commit không ghi đè. metadata/response được serialize theo allowlist; không ghi request body, messages, source_quote, provider reply hoặc nội dung lỗi tự do vào requests/runs/log. 400/405/413/415 không persist; DB không khỏe/không rõ commit trả DATABASE_UNAVAILABLE và replay cùng key sau phục hồi.
+- error_code thuộc Error enum của SPEC, đã gồm INTERNAL_ERROR theo OpenAPI đề xuất. INTERNAL_ERROR sau claim kết thúc receipt HTTP 500/run failed khi DB khỏe; nếu success đã commit không ghi đè. metadata/response được serialize theo allowlist; không ghi request body, messages, source_quote, provider reply hoặc nội dung lỗi tự do vào requests/runs/log. 400/405/413/415 không persist; DB không khỏe/không rõ commit trả DATABASE_UNAVAILABLE và replay cùng key sau phục hồi.
 
 ### Khóa và lưu nguyên tử
 
@@ -694,7 +696,7 @@ Không thêm tenant_id, user_id, membership hoặc RLS khi chưa có SaaS. Chuy�
 - **Không purge receipts:** chọn effect-once lâu dài, thay vì xóa metadata sau 30 ngày như logs; metadata tăng nhưng retry UUID cũ vẫn an toàn. Purge cần policy tombstones/expiry được chốt.
 - **Chỉ audit theo mục đích:** chọn events/versions/receipts, thay vì full event sourcing; ít dữ liệu nhưng không tái dựng mọi giá trị goal/material trước đây.
 
-planned_period cần quyết định/cập nhật contract trước khi làm US-003. Nếu đổi multi-user, retention, signature hoặc kiểu liên kết nguồn, cập nhật ADR 002/005 hoặc tạo ADR kế tiếp với Status phù hợp; không đánh dấu Accepted chỉ vì có tài liệu này.
+planned_period đã đồng bộ giữa SPEC/OpenAPI/schema ở P01; cần kiểm default, hash và ngày đầu tuần khi triển khai US-003. Nếu đổi multi-user, retention, signature hoặc kiểu liên kết nguồn, cập nhật ADR 002/005 hoặc tạo ADR kế tiếp với Status phù hợp; không đánh dấu Accepted chỉ vì có tài liệu này.
 
 ## 10. Sơ đồ và kiểm chứng bàn giao
 

@@ -1,5 +1,7 @@
 # StudyCraft — Khái niệm API
 
+> **Contract delta chưa triển khai — 2026-10-08:** [SPEC v3](../SPEC.md) đã chốt lịch sử chat lưu DB, replay sau restart và giới hạn từ theo loại bài. OpenAPI hiện chưa có các thay đổi này; mô tả cache reply RAM/RESULT_EXPIRED cho chat dưới đây đã bị thay thế. Đồng bộ schema, ví dụ và endpoints trong I-03/I-05 trước coding; không dùng contract cũ cho các luồng đó.
+
 **Status: Proposed — 2026-10-08.** Hợp đồng máy đọc: [openapi.json](openapi.json). Nguồn: [user stories](../requirements/user-stories.md), [schema PostgreSQL](../architecture/database-schema.md), [kiến trúc](../architecture/system-design.md), [SPEC](../SPEC.md). Chưa có API chạy; tài liệu này chỉ giải thích khái niệm, không liệt kê lại endpoints.
 
 ## Auth — Session local và CSRF
@@ -16,7 +18,7 @@ Secret ổn định giúp phiên/token còn hạn dùng sau restart; reply chat 
 
 API dùng prefix `/api/v1`; health là kiểm tra vận hành độc lập phiên bản nghiệp vụ. `openapi: 3.1.1` là định dạng tài liệu, `info.version: 1.0.0-draft` là phiên bản hợp đồng đề xuất; SPEC v2 là phiên bản tài liệu trước đó. Ba số này không thay thế nhau. [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html).
 
-OpenAPI đề xuất thay transport toàn-POST cũ bằng GET cho đọc, giữ POST cho ghi; `Idempotency-Key` thay `request_id` trong body, Problem thay Error envelope, thêm `planned_period` từ schema. Tool adapter vẫn có thể dùng request_id/Error nội bộ. Các thay đổi được ghi tại `x-design-deltas`; không có alias legacy đã chạy. OpenAPI là hợp đồng HTTP đề xuất; SPEC vẫn là nguồn bất biến nghiệp vụ/provider contracts. Phải đồng bộ adapter/contracts/tests trước coding API.
+OpenAPI đề xuất thay transport toàn-POST cũ bằng GET cho đọc, giữ POST cho ghi; `Idempotency-Key` thay `request_id` trong body, Problem thay Error envelope, thêm `planned_period` từ schema. Tool adapter dùng request_id/Error nội bộ. Các thay đổi được ghi tại `x-design-deltas`; không có alias legacy đã chạy. OpenAPI là hợp đồng HTTP đề xuất; SPEC vẫn là nguồn bất biến nghiệp vụ/provider contracts. P01 đã đồng bộ manifest SPEC về planned_period/INTERNAL_ERROR và quy tắc ánh xạ; adapter/tests chưa được triển khai. HTTP input cho phép thiếu planned_period; adapter điền day trước hash/gọi tool, nội bộ/output luôn có trường này.
 
 Request/success objects từ chối trường lạ. Đổi field name/type/meaning, trường bắt buộc, enum response, hoặc thêm field response làm client strict validator thất bại cần major version mới. Tùy chọn input mới có default và không đổi response cũ có thể tăng minor; sửa mô tả/example không đổi hành vi tăng patch. Không thay rubric của phản hồi đã lưu khi đổi version.
 

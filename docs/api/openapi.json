@@ -1,5 +1,6 @@
 {
   "openapi": "3.1.1",
+  "x-pending-spec-v3": "2026-10-08: SPEC v3 supersedes ephemeral chat and global writing word limits. Before I-03/I-05 implementation, synchronize WritingPolicy snapshots, chat.create/list/read, thread-scoped chat.send, durable message IDs/replay, examples and database DDL. Existing paths/schemas below remain the prior baseline; not implementation-ready for those flows.",
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "StudyCraft MVP API",
@@ -5286,7 +5287,7 @@
     "3 read tools move to GET path/query; 9 mutations remain named POST tools.",
     "Unsafe Idempotency-Key UUIDv4 maps request_id; body request_id rejected. Header normalized to lowercase UUID before scope lookup; body UUIDs canonicalized to lowercase for hashing.",
     "Problem response replaces transport Error envelope. Internal service adapter may retain legacy Error shape; do not return Error at HTTP boundary.",
-    "Transport 400/405/413/415 reject before claim, no receipt/run. HTTP500 INTERNAL_ERROR durable extension requires DB receipt CHECK500 and service Error enum extension.",
+    "Transport 400/405/413/415 reject before claim, no receipt/run. P01 aligns the proposed DB receipt CHECK500 and internal SPEC Error enum with HTTP500 INTERNAL_ERROR; migration and service implementation remain pending.",
     "planned_period added from DB proposal: optional day default in input, required in output; UI selecting week must send explicitly.",
     "Cookie name, maxAge8h, stable signing-secret/HMAC-bound CSRF bootstrap/reuse are explicit proposals; no session table/login accounts."
   ],

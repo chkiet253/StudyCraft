@@ -1,8 +1,10 @@
 # StudyCraft — Thiết kế kiến trúc MVP
 
+> **Cập nhật quyết định 2026-10-08:** [SPEC v3](../SPEC.md) thay thế chat RAM bằng lịch sử PostgreSQL, nhật ký/revisions vĩnh viễn và policy theo loại bài. Cấu trúc mã mục tiêu dùng src/studycraft tại SPEC §12; các path app/ và mô tả chat tạm bên dưới là baseline cũ, cần đồng bộ khi triển khai I-03/I-05.
+
 **Trạng thái: Proposed — đề xuất, 2026-10-07.** Nguồn: [PRD](../requirements/prd.md), [18 user stories](../requirements/user-stories.md), [SPEC v2](../SPEC.md). Repo hiện có tài liệu, chưa có ứng dụng để kiểm chứng thiết kế.
 
-Thiết kế phục vụ một người học trên máy cá nhân, bắt đầu bằng sửa bài viết tiếng Anh. Nghe/nói/đọc là tầm nhìn dài hạn. Thông tin nhóm hai người trong mẫu giới thiệu khác PRD làm solo; khác biệt đó không thay yêu cầu một người dùng local.
+Thiết kế phục vụ một người học trên máy cá nhân, bắt đầu bằng sửa bài viết tiếng Anh. Nghe/nói/đọc là tầm nhìn dài hạn. Nhóm phát triển hai người đã được xác nhận trong PRD; điều này không thay yêu cầu một người dùng local.
 
 **Nguồn quyết định:** PostgreSQL, model local trước, chat riêng và nhật ký tóm tắt đã được người dùng chọn. Jinja, LM Studio, giới hạn dữ liệu và mọi NFR mới dưới đây vẫn là đề xuất. Chưa chọn phiên bản Qwen hoặc cấu hình máy; không tự dùng API cloud hoặc fine-tuning.
 
