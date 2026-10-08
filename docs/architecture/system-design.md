@@ -11,7 +11,7 @@ Thiết kế phục vụ một người học trên máy cá nhân, bắt đầu
 **Monolith — một ứng dụng backend chia theo trách nhiệm**, không phải các dịch vụ triển khai riêng. Có ba tiến trình chính trên cùng máy: ứng dụng, PostgreSQL và runtime model.
 
 - **Trình duyệt:** các khu vực Tài liệu, Luyện viết/Kết quả, Chat, Nhật ký. Jinja + HTML/CSS/JavaScript thuần; lấy JSON bằng fetch. Chat tạm trong RAM của tab. Không tự gửi câu hỏi sau sửa bài.
-- **Web/API FastAPI:** phục vụ `/`, `/static/*`, `/health`, POST `/api/tools/{name}`; kiểm Host/Origin/session/CSRF, giới hạn body, schema đầu vào và trả lỗi theo SPEC. Chỉ nhận tên tool thuộc danh sách cho phép.
+- **Web/API FastAPI:** phục vụ `/`, `/static/*`, `/health`; transport đề xuất mới trong [OpenAPI](../api/openapi.json) dùng `/api/v1`, GET cho ba tool đọc và POST `/api/v1/tools/{name}` cho chín tool ghi, thay bố trí toàn-POST `/api/tools/{name}` trước đó. Kiểm Host/Origin/session/CSRF, giới hạn body, schema đầu vào và Problem HTTP; giữ tool allowlist và bất biến nghiệp vụ SPEC.
 - **Nghiệp vụ hồ sơ và bài:** hồ sơ/mục tiêu, tài liệu, hoạt động, đề mẫu/đề riêng, nộp bài, bản viết lại và lịch sử. Lưu submission trước model; giữ material snapshot của đề cũ. Phục vụ US-001, US-002, US-003, US-004, US-005, US-006, US-010, US-011.
 - **Nghiệp vụ AI:** sửa bài và xử lý lỗi (US-007, US-008, US-009); hỏi đáp/trích khai báo (US-012, US-013); tóm tắt/đính chính nhật ký (US-014, US-015, US-016). Nhật ký đếm app events bằng code; model chỉ tổng hợp phần lời khai/đính chính.
 - **Runner giới hạn:** chạy đúng mode do thao tác UI chọn: feedback.generate, chat.send, journal.summarize hoặc journal.correct. Đọc snapshot → tạo context → gọi model → kiểm tra → lưu. Không planning tự do, chuỗi agent hoặc model tự chọn tool. Tối đa một run running/workspace.
@@ -76,7 +76,7 @@ Khi mở kỳ nhật ký theo giả định hiện tại: lấy reports/events/c
 - **NFR-S01:** 1 máy, 1 người học, 1 workspace tiếng Anh, 1 Uvicorn worker; tối đa 1 run model running/workspace, 0 hàng đợi model. Kiểm hai yêu cầu model khác ID đồng thời: một chạy, một nhận RUN_BUSY.
 - **NFR-S02:** dataset kiểm tra 10.000 history entries; hỗ trợ 5 request đọc/lưu không-model đồng thời trong khi một run đang chờ model. Đây là tải kiểm tra, không giới hạn số hồ sơ lưu cả đời.
 - **NFR-S03:** RAM ứng dụng mục tiêu ≤512 MiB, không tính PostgreSQL/runtime/model, trên tải S02. Phần RAM/VRAM model chưa đặt số do chưa biết máy; `TODO(developer)`.
-- **NFR-S04:** giữ các giả định SPEC: ≤40.000 UTF-8 bytes context và phải fit context model; ≤3.000 output tokens; ≤500 reports/1.000 events/100 correction notes mỗi kỳ. Vượt nguồn bắt buộc → CONTEXT_LIMIT, không âm thầm cắt nguồn. Giới hạn body HTTP đề xuất 256 KiB, trả 422 INVALID_INPUT khi vượt.
+- **NFR-S04:** giữ các giả định SPEC: ≤40.000 UTF-8 bytes context và phải fit context model; ≤3.000 output tokens; ≤500 reports/1.000 events/100 correction notes mỗi kỳ. Vượt nguồn bắt buộc → CONTEXT_LIMIT, không âm thầm cắt nguồn. Giới hạn body HTTP đề xuất 256 KiB, trả 413 PAYLOAD_TOO_LARGE trước receipt claim khi vượt, theo OpenAPI đề xuất ngày 2026-10-08.
 
 ### Độ trễ và timeout
 

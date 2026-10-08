@@ -2,6 +2,8 @@
 
 **Status: Proposed — 2026-10-07.** Nguồn: [PRD](../requirements/prd.md), [US-001–US-018](../requirements/user-stories.md), [system design](system-design.md), [SPEC §6/§9](../SPEC.md), [ADR 002](adr/002-postgres-durable-records.md) và [ADR 005](adr/005-ephemeral-chat-versioned-journals.md). Đây là thiết kế bàn giao, chưa phải migration đã chạy.
 
+**Bổ sung HTTP contract — 2026-10-08:** [OpenAPI đề xuất](../api/openapi.json) ánh xạ Idempotency-Key → request_id nội bộ và Problem → Error metadata; bổ sung INTERNAL_ERROR/HTTP 500 cho receipt/run đã claim. Lỗi transport 400/405/413/415 bị chặn trước claim, không lưu receipt. Chưa có migration thực thi.
+
 ## 1. Phạm vi, giả định và thay đổi hợp đồng cần chốt
 
 - Giữ đúng 16 bảng trong SPEC. Một người học, một workspace tiếng Anh, model local; không bảng users/roles, billing, files, embeddings hoặc transcript.
@@ -136,7 +138,7 @@ CREATE TABLE requests (
             AND error_code IS NULL AND response_json IS NULL AND cardinality(result_ids) = 0)
         OR (state = 'completed' AND http_status IS NOT NULL AND completed_at IS NOT NULL
             AND completed_at >= created_at)),
-    CHECK (http_status IS NULL OR http_status IN (200,403,404,409,422,502,503,504)),
+    CHECK (http_status IS NULL OR http_status IN (200,403,404,409,422,500,502,503,504)),
     CHECK (state <> 'completed' OR
         (http_status = 200 AND error_code IS NULL AND NOT error_retryable
          AND (tool = 'chat.send' OR response_json IS NOT NULL)) OR
@@ -440,7 +442,7 @@ Immutable. Một history item/journal revision. API adapter đọc đúng artifa
 - Có report ngày rõ mới INSERT; tuần chuẩn hóa thứ Hai–Chủ nhật, không tự chia cho ngày. Không lưu việc dự định hoặc kỳ bắt đầu trong tương lai như việc đã học.
 - Correction period/start/end phải bằng header journal; base_revision phải là current_revision đã kiểm. Cung cấp mọi notes liên quan theo `(created_at,id)`, mới hơn ưu tiên khi cùng nội dung; chưa có khóa nội dung để DB tự quyết định notes nào tương đương.
 - source_*_ids là toàn bộ nguồn cung cấp cho tổng hợp, không chỉ used_*_ids model nêu. Không nguồn quá giới hạn bị âm thầm bỏ; quá 500/1000/100 → CONTEXT_LIMIT, không commit bản mới.
-- error_code chỉ thuộc Error enum của SPEC. metadata/response được serialize theo allowlist; không ghi request body, messages, source_quote, provider reply hoặc nội dung lỗi tự do vào requests/runs/log.
+- error_code thuộc Error enum của SPEC và INTERNAL_ERROR bổ sung theo OpenAPI đề xuất. INTERNAL_ERROR sau claim kết thúc receipt HTTP 500/run failed khi DB khỏe; nếu success đã commit không ghi đè. metadata/response được serialize theo allowlist; không ghi request body, messages, source_quote, provider reply hoặc nội dung lỗi tự do vào requests/runs/log. 400/405/413/415 không persist; DB không khỏe/không rõ commit trả DATABASE_UNAVAILABLE và replay cùng key sau phục hồi.
 
 ### Khóa và lưu nguyên tử
 

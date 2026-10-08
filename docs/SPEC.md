@@ -167,6 +167,8 @@ flowchart LR
 
 ## 6. Tools
 
+**HTTP design bổ sung — 2026-10-08, Proposed:** [OpenAPI 3.1](api/openapi.json) và [API concepts](api/overview.md) đặc tả versioning, GET cho đọc/POST cho ghi, Idempotency-Key ánh xạ request_id, Problem thay Error ở HTTP boundary, planned_period của activity và INTERNAL_ERROR/HTTP 500. JSON manifest dưới đây vẫn mô tả tool/provider contracts nội bộ; adapter phải ánh xạ và đồng bộ các bổ sung đó trước coding. Không coi transport toàn-POST cũ là alias đã triển khai.
+
 Tool là application operation có schema, không phải quyền model tự gọi API. Model trả dữ liệu, application service kiểm tra và quyết định việc được ghi. Document JSON dưới đây là manifest `app/contracts.json`; validate schema con input/output/provider_outputs với `$ref` resolve từ root, draft 2020-12, bật uuid/date/date-time format checks.
 
 ```json
