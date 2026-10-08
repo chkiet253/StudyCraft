@@ -1,0 +1,231 @@
+flowchart TB
+  %% Proposed task dependencies, 2026-10-08; not executed work.
+  subgraph S0["Sprint 0: Khung chạy được và hợp đồng thống nhất"]
+    R01["R01 - B - Bài tập nhập môn Python web"]
+    R02["R02 - A - Rà chênh lệch contracts và quyết định còn mở"]
+    R03["R03 - A - Khả năng chạy model trên máy A"]
+    T000["T000 - A - Đồng bộ OpenAPI, DDL/ER và ADR với SPEC v3"]
+    T001["T001 - A - Package src, app factory và config"]
+    T002["T002 - A - Postgres, migration nền và health"]
+    T003["T003 - B - Web shell và panel riêng"]
+    T004["T004 - A - Session, CSRF, errors và log metadata"]
+    T005["T005 - B - Ví dụ API và dữ liệu giả phục vụ giao diện"]
+    T006["T006 - B - Chạy lại setup trên máy B"]
+  end
+  subgraph S1["Sprint 1: Hồ sơ, tài liệu và hoạt động học"]
+    R04["R04 - B - Session/transaction SQLAlchemy qua module mẫu"]
+    T101["T101 - A - Receipt chống ghi trùng và version checks"]
+    T102["T102 - A - Workspace/profile service làm mẫu"]
+    T103["T103 - B - Material service và API"]
+    T104["T104 - B - Giao diện tài liệu"]
+    T105["T105 - B - Giao diện hồ sơ"]
+    T106["T106 - A - Activity ngày/tuần và trạng thái thủ công"]
+    T107["T107 - B - Giao diện hoạt động"]
+    T108["T108 - A - Kiểm tra ownership, duplicate và hai tab"]
+  end
+  subgraph S2["Sprint 2: Nộp bài, policy và tìm lại lịch sử"]
+    R05["R05 - A - Chốt policy từng loại bài và dữ liệu kiểm thử"]
+    R06["R06 - B - Fetch/DOM/CSRF và UI bất đồng bộ"]
+    T201["T201 - A - Exercise/template và snapshot policy/material"]
+    T202["T202 - B - Submission và bản viết lại"]
+    T203["T203 - A - History cursor và đọc artifacts"]
+    T204["T204 - B - Form chọn đề, nộp bài và viết lại"]
+    T205["T205 - B - Giao diện lịch sử bài"]
+    T206["T206 - A - Tests policy và bảo toàn dữ liệu"]
+    T207["T207 - B - Demo nộp → restart → mở lại"]
+  end
+  subgraph S3["Sprint 3: Sửa lỗi bằng fake rồi model local"]
+    R07["R07 - A - Thử prompt/schema sửa bài tối thiểu"]
+    T301["T301 - A - LLM interface và fake adapter"]
+    T302["T302 - A - Local HTTP adapter"]
+    T303["T303 - A - Bounded runner và recovery"]
+    T304["T304 - A - Quote validator, edits và feedback atomic"]
+    T305["T305 - B - Panel kết quả riêng"]
+    T306["T306 - B - Fixtures hành vi và adversarial"]
+    T307["T307 - B - Failure/retry/full-loop tests"]
+    T308["T308 - B - Ghi nhận local smoke và hoàn thiện hướng dẫn"]
+  end
+  subgraph S4["Sprint 4: Chat chủ động có lịch sử"]
+    R08["R08 - A - Context chat và failure sequence"]
+    T401["T401 - A - Migration threads/messages và indexes"]
+    T402["T402 - B - Chat create/list/read API"]
+    T403["T403 - A - Chat send và durable replay"]
+    T404["T404 - A - Reports từ tin hiện tại"]
+    T405["T405 - B - Chat UI chọn thread/context và đọc lại"]
+    T406["T406 - B - Restart, replay và privacy tests"]
+    T407["T407 - A - Crash/ownership review và fix xác định"]
+  end
+  subgraph S5["Sprint 5: Nhật ký ngày/tuần từ nguồn có thật"]
+    R09["R09 - B - Ngày/tuần, timezone và truy vấn nguồn"]
+    T501["T501 - B - Period helpers và query events/reports"]
+    T502["T502 - A - Schema nhật ký và source signature"]
+    T503["T503 - A - Summary mode và persist theo signature"]
+    T504["T504 - B - Nhật ký UI ngày/tuần"]
+    T505["T505 - B - Đọc nhật ký cũ khi model off"]
+    T506["T506 - A - Tests nguồn, cache và stale race"]
+    T507["T507 - B - Demo journal ngày/tuần và offline"]
+  end
+  subgraph S6["Sprint 6: Đính chính nhật ký và bảo vệ quyền người học"]
+    R10["R10 - A - Quy tắc đính chính và cách hiển thị trong Chat"]
+    T601["T601 - A - Journal correction service và conflict"]
+    T602["T602 - B - UI đính chính gắn đúng journal/revision"]
+    T603["T603 - A - Regenerate tôn trọng correction notes"]
+    T604["T604 - B - Xem phiên bản trước và nhãn editor"]
+    T605["T605 - B - Tests hai tab và correction persistence"]
+    T606["T606 - A - Adversarial và redaction liên mode"]
+    T607["T607 - B - Regression luồng học và nhật ký"]
+  end
+  subgraph S7["Sprint 7: Kiểm chứng toàn MVP và bàn giao local"]
+    R11["R11 - B - Playwright và dữ liệu E2E độc lập"]
+    T701["T701 - B - Browser E2E cho các luồng và hai viewport"]
+    T702["T702 - A - Backup/restore và migration rehearsal"]
+    T703["T703 - A - Local smoke cho đủ các mode"]
+    T704["T704 - B - Kiểm tra setup/triage lỗi người dùng"]
+    T705["T705 - A - Review khả năng vận hành và lỗi chặn release"]
+    T706["T706 - B - README và hướng dẫn sử dụng bàn giao"]
+    T707["T707 - A - Đối chiếu 18 stories và sign-off MVP"]
+    T708["T708 - A - Chốt trạng thái và backlog sau MVP"]
+  end
+  R02 --> T000
+  T001 --> T002
+  T000 --> T002
+  R01 --> T003
+  T001 --> T003
+  T001 --> T004
+  T002 --> T004
+  R01 --> T005
+  T000 --> T005
+  T002 --> T006
+  T003 --> T006
+  T004 --> T006
+  T002 --> R04
+  T004 --> T101
+  T000 --> T101
+  T101 --> T102
+  R04 --> T103
+  T101 --> T103
+  T102 --> T103
+  T005 --> T104
+  T103 --> T104
+  T102 --> T105
+  T005 --> T105
+  T101 --> T106
+  T106 --> T107
+  T005 --> T107
+  T103 --> T108
+  T104 --> T108
+  T105 --> T108
+  T107 --> T108
+  R02 --> R05
+  T003 --> R06
+  T004 --> R06
+  T005 --> R06
+  T000 --> T201
+  R05 --> T201
+  T103 --> T201
+  T201 --> T202
+  T101 --> T202
+  T202 --> T203
+  R06 --> T204
+  T201 --> T204
+  T202 --> T204
+  T203 --> T205
+  T202 --> T206
+  T203 --> T206
+  T204 --> T207
+  T205 --> T207
+  T206 --> T207
+  R03 --> R07
+  T201 --> R07
+  T000 --> T301
+  T206 --> T301
+  R03 --> T302
+  T301 --> T302
+  T101 --> T303
+  T301 --> T303
+  T303 --> T304
+  T201 --> T304
+  T202 --> T304
+  T005 --> T305
+  T204 --> T305
+  T301 --> T306
+  T304 --> T307
+  T305 --> T307
+  T306 --> T307
+  T302 --> T308
+  T304 --> T308
+  T307 --> T308
+  R07 --> T308
+  T000 --> R08
+  T303 --> R08
+  T000 --> T401
+  T303 --> T401
+  T401 --> T402
+  T101 --> T402
+  R08 --> T403
+  T401 --> T403
+  T402 --> T403
+  T302 --> T403
+  T303 --> T403
+  T304 --> T403
+  T403 --> T404
+  T402 --> T405
+  T005 --> T405
+  T305 --> T405
+  T403 --> T406
+  T404 --> T406
+  T405 --> T406
+  T406 --> T407
+  T106 --> R09
+  T404 --> R09
+  R09 --> T501
+  T501 --> T502
+  T502 --> T503
+  T303 --> T503
+  T404 --> T503
+  T005 --> T504
+  T501 --> T504
+  T203 --> T505
+  T502 --> T505
+  T503 --> T506
+  T505 --> T506
+  T504 --> T507
+  T505 --> T507
+  T506 --> T507
+  T503 --> R10
+  T405 --> R10
+  R10 --> T601
+  T502 --> T601
+  T503 --> T601
+  T504 --> T602
+  T405 --> T602
+  T005 --> T602
+  T601 --> T603
+  T505 --> T604
+  T601 --> T604
+  T602 --> T605
+  T603 --> T605
+  T604 --> T605
+  T108 --> T606
+  T307 --> T606
+  T407 --> T606
+  T605 --> T606
+  T605 --> T607
+  T606 --> T607
+  T607 --> R11
+  R11 --> T701
+  T607 --> T701
+  T607 --> T702
+  T308 --> T703
+  T607 --> T703
+  T701 --> T704
+  T702 --> T705
+  T703 --> T705
+  T704 --> T705
+  T702 --> T706
+  T704 --> T706
+  T705 --> T707
+  T706 --> T707
+  T707 --> T708
+  classDef critical stroke:#d97706,stroke-width:3px;
+  class R02,T000,T002,T004,T101,T102,T103,T201,T202,T203,T206,T301,T303,T401,T402,T403,T404,R09,T501,T502,T503,R10,T601,T604,T605,T606,T607,R11,T701,T704,T705,T707,T708 critical;
