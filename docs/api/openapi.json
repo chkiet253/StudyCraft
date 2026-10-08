@@ -1,0 +1,5466 @@
+{
+  "openapi": "3.1.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "StudyCraft MVP API",
+    "version": "1.0.0-draft",
+    "summary": "Design-first local API; no implementation claimed.",
+    "description": "Proposed 2026-10-08. Source: ../requirements/user-stories.md, ../architecture/database-schema.md, ../SPEC.md, ADR006. Success domain schemas derive from SPEC; transport changes below are proposals, not deployed behavior. All examples are independent synthetic fixtures. Chỉ một người học local; không user accounts, cloud, uploads, streaming, job queue hoặc automatic model tools. Shared Problem uses RFC9457 style. See overview.md for concepts."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000",
+      "description": "Đề xuất loopback/same-origin. Đổi port phải đồng bộ web origin/Host allowlist; không public/LAN."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Workspace"
+    },
+    {
+      "name": "Materials"
+    },
+    {
+      "name": "Activities"
+    },
+    {
+      "name": "Writing"
+    },
+    {
+      "name": "Chat"
+    },
+    {
+      "name": "Journals"
+    },
+    {
+      "name": "History"
+    },
+    {
+      "name": "Runs"
+    },
+    {
+      "name": "Operations"
+    }
+  ],
+  "security": [
+    {
+      "LocalSession": []
+    }
+  ],
+  "paths": {
+    "/api/v1/workspaces/{workspace_id}": {
+      "get": {
+        "operationId": "workspaceRead",
+        "tags": [
+          "Workspace"
+        ],
+        "summary": "Đọc workspace và các danh sách có giới hạn.",
+        "description": "Chỉ đọc, không inference/tạo journal. Có tối đa 50 tài liệu, 20 activities gần nhất, 10 journals gần nhất, 100 catalog items, 20 đề mẫu. Muốn tổng hợp khi xem dùng journal.summarize chủ động do UI gọi.",
+        "x-story-ids": [
+          "US-001",
+          "US-002",
+          "US-003",
+          "US-004",
+          "US-005",
+          "US-011",
+          "US-014",
+          "US-015"
+        ],
+        "x-error-codes": [
+          "FORBIDDEN",
+          "NOT_FOUND",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "INVALID_INPUT"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceReadResponse"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/WorkspaceReadResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": []
+          }
+        ],
+        "x-tool-name": "workspace.read"
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/history": {
+      "get": {
+        "operationId": "historyList",
+        "tags": [
+          "History"
+        ],
+        "summary": "Đọc lịch sử bằng cursor ID giảm dần.",
+        "description": "limit mặc định 20, 1–50. Bỏ before_id → null trong tool. id < before_id, ORDER BY id DESC, fetch limit+1. Hydrate đúng artifact/revision; không tải chat. Cập nhật mới cần refresh trang đầu.",
+        "x-story-ids": [
+          "US-011"
+        ],
+        "x-error-codes": [
+          "FORBIDDEN",
+          "NOT_FOUND",
+          "INVALID_INPUT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryBeforeId"
+          },
+          {
+            "$ref": "#/components/parameters/HistoryLimit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryListResponse"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/HistoryListResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": []
+          }
+        ],
+        "x-tool-name": "history.list"
+      }
+    },
+    "/api/v1/workspaces/{workspace_id}/runs/{run_id}": {
+      "get": {
+        "operationId": "runRead",
+        "tags": [
+          "Runs"
+        ],
+        "summary": "Tra trạng thái run đã tạo.",
+        "description": "Không inference hoặc phục hồi tự động. Không expose prompt/context contents. Journal nhánh không inference có receipt nhưng không run; NOT_FOUND không cho phép tự tạo UUID mới. Replay POST đúng Idempotency-Key để tra kết quả request.",
+        "x-story-ids": [
+          "US-009",
+          "US-012",
+          "US-014",
+          "US-015",
+          "US-016"
+        ],
+        "x-error-codes": [
+          "FORBIDDEN",
+          "NOT_FOUND",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "INVALID_INPUT"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "$ref": "#/components/parameters/RunId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/RunReadResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": []
+          }
+        ],
+        "x-tool-name": "run.read"
+      }
+    },
+    "/api/v1/tools/workspace.update": {
+      "post": {
+        "operationId": "workspaceUpdate",
+        "tags": [
+          "Workspace"
+        ],
+        "summary": "Lưu mục tiêu/ngữ cảnh/hồ sơ theo quyết định người học.",
+        "description": "expected_version dùng optimistic locking; tăng workspace.version trong cùng commit. Không cho mode model gọi thao tác này.",
+        "x-story-ids": [
+          "US-001",
+          "US-018"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "VERSION_CONFLICT"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyWorkspaceUpdate"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/WorkspaceUpdateResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflictVersionConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "workspace.update",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceUpdateInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/WorkspaceUpdateRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000101"
+        }
+      }
+    },
+    "/api/v1/tools/material.save": {
+      "post": {
+        "operationId": "materialSave",
+        "tags": [
+          "Materials"
+        ],
+        "summary": "Lưu văn bản hoặc bản sao từ danh mục riêng với chat.",
+        "description": "Mode user tạo khi material_id=null, cập nhật khi có ID. Catalog copy unique/workspace, chọn lại trả bản hiện có. Sửa bản catalog bằng text chuyển catalog_id=null. Tối đa 50 materials/workspace; không tự lấy nội dung từ title.",
+        "x-story-ids": [
+          "US-002",
+          "US-008",
+          "US-018"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "NOT_FOUND",
+          "VERSION_CONFLICT"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyMaterialSave"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Material"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/MaterialSaveResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflictVersionConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "material.save",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialSaveInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/MaterialSaveRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000102"
+        }
+      }
+    },
+    "/api/v1/tools/activity.save": {
+      "post": {
+        "operationId": "activitySave",
+        "tags": [
+          "Activities"
+        ],
+        "summary": "Lưu việc học hoặc trạng thái do người học trực tiếp chọn.",
+        "description": "Tăng workspace.version. planned_period bỏ qua → day trước hash/tool; UI chọn tuần gửi week, planned_for là thứ Hai. Không auto-complete từ bài/feedback/model. Chỉ đổi status mới tạo event; tạo completed tính một confirmation.",
+        "x-story-ids": [
+          "US-003",
+          "US-004",
+          "US-018"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "NOT_FOUND",
+          "VERSION_CONFLICT"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyActivitySave"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Activity"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/ActivitySaveResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflictVersionConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "activity.save",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivitySaveInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/ActivitySaveRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000103"
+        }
+      }
+    },
+    "/api/v1/tools/exercise.create": {
+      "post": {
+        "operationId": "exerciseCreate",
+        "tags": [
+          "Writing"
+        ],
+        "summary": "Tạo snapshot đề tự nhập hoặc đề mẫu.",
+        "description": "Không sinh đề bằng model. Sao chép material_snapshot nếu chọn; cùng workspace. Đổi material/template sau đó không đổi nguồn của bài cũ.",
+        "x-story-ids": [
+          "US-005",
+          "US-008"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "NOT_FOUND"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyExerciseCreate"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exercise"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/ExerciseCreateResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "exercise.create",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExerciseCreateInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/ExerciseCreateRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000104"
+        }
+      }
+    },
+    "/api/v1/tools/submission.add": {
+      "post": {
+        "operationId": "submissionAdd",
+        "tags": [
+          "Writing"
+        ],
+        "summary": "Lưu bài đã hoàn thành trước khi gọi model.",
+        "description": "Lưu nguyên văn, không trim/normalize. 1–300 từ bằng regex SPEC [A-Za-z]+(?:['’-][A-Za-z]+)*; ≤6000 ký tự. revision_of phải là bài có trước cùng exercise/workspace. Bản viết lại là INSERT mới, không ghi đè.",
+        "x-story-ids": [
+          "US-006",
+          "US-009",
+          "US-010",
+          "US-018"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "NOT_FOUND"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeySubmissionAdd"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/SubmissionAddResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422InvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "submission.add",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmissionAddInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/SubmissionAddRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000105"
+        }
+      }
+    },
+    "/api/v1/tools/feedback.generate": {
+      "post": {
+        "operationId": "feedbackGenerate",
+        "tags": [
+          "Writing"
+        ],
+        "summary": "Sinh bản sửa riêng từ bài đã lưu.",
+        "description": "Run.id=Idempotency-Key. Tối đa 1 run running/workspace, deadline120s/2attempts trong cùng deadline; không auto retry timeout. Kiểm quotes zero-based Unicode code points/end exclusive, edits không overlap; server tạo corrected_text. Giữ bài gốc; có thể corrections rỗng; không mở chat/cho điểm/ý tưởng/bài tiếp theo.",
+        "x-story-ids": [
+          "US-007",
+          "US-008",
+          "US-009",
+          "US-018"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "NOT_FOUND",
+          "RUN_BUSY",
+          "LOCAL_MODEL_UNAVAILABLE",
+          "MODEL_TIMEOUT",
+          "INVALID_MODEL_OUTPUT",
+          "CONTEXT_LIMIT",
+          "INTERRUPTED"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyFeedbackGenerate"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Feedback"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/FeedbackGenerateResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflictInterruptedRunBusy"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422ContextLimitInvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/Problem502InvalidModelOutput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailableLocalModelUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/Problem504ModelTimeout"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "feedback.generate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackGenerateInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/FeedbackGenerateRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000106"
+        }
+      }
+    },
+    "/api/v1/tools/chat.send": {
+      "post": {
+        "operationId": "chatSend",
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Hỏi chủ động và giữ ghi chú học ngắn từ tin hiện tại.",
+        "description": "Không tự gọi từ kết quả sửa. Nếu chọn feedback, phải cùng workspace; không thay feedback. Chỉ trích lời khai đã học từ message hiện tại, không từ recent_messages/assistant/dự định. Tối đa3 reports; ngày rõ theo Asia/Ho_Chi_Minh, week thứ Hai–Chủ nhật; mơ hồ hỏi lại không lưu phần chưa rõ. Request/reply/recent_messages/source_quote chỉ RAM; DB receipt.response_json luôn NULL. Same key success khi cache quá10phút/restart → RESULT_EXPIRED, không inference/report trùng.",
+        "x-story-ids": [
+          "US-012",
+          "US-013",
+          "US-017",
+          "US-018"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "NOT_FOUND",
+          "RUN_BUSY",
+          "LOCAL_MODEL_UNAVAILABLE",
+          "MODEL_TIMEOUT",
+          "INVALID_MODEL_OUTPUT",
+          "CONTEXT_LIMIT",
+          "RESULT_EXPIRED",
+          "INTERRUPTED"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyChatSend"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResult"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/ChatSendResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflictInterruptedResultExpiredRunBusy"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422ContextLimitInvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/Problem502InvalidModelOutput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailableLocalModelUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/Problem504ModelTimeout"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "chat.send",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatSendInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/ChatSendRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000107"
+        }
+      }
+    },
+    "/api/v1/tools/journal.summarize": {
+      "post": {
+        "operationId": "journalSummarize",
+        "tags": [
+          "Journals"
+        ],
+        "summary": "Đọc hoặc tạo nhật ký đúng kỳ khi nguồn thay đổi.",
+        "description": "Day start=end=anchor; week chuẩn hóa thứ Hai–Chủ nhật. Cùng source_signature trả revision đã lưu; empty/event-only không model/run nhưng có receipt. Report/correction tuần không phân bổ cho ngày. Counts do server tính từ events; nguồn giới hạn500reports/1000events/100notes, context40000UTF8bytes. Nguồn đổi trước commit → VERSION_CONFLICT. Giữ các revision và corrections cũ; replay receipt trả Journal/status ban đầu.",
+        "x-story-ids": [
+          "US-014",
+          "US-015",
+          "US-017"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "VERSION_CONFLICT",
+          "RUN_BUSY",
+          "LOCAL_MODEL_UNAVAILABLE",
+          "MODEL_TIMEOUT",
+          "INVALID_MODEL_OUTPUT",
+          "CONTEXT_LIMIT",
+          "INTERRUPTED"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyJournalSummarize"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journal"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/JournalSummarizeResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflictInterruptedRunBusyVersionConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422ContextLimitInvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/Problem502InvalidModelOutput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailableLocalModelUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/Problem504ModelTimeout"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "journal.summarize",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JournalSummarizeInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/JournalSummarizeRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000108"
+        }
+      }
+    },
+    "/api/v1/tools/journal.correct": {
+      "post": {
+        "operationId": "journalCorrect",
+        "tags": [
+          "Journals"
+        ],
+        "summary": "Đính chính nhật ký qua chat gắn bản đang xem.",
+        "description": "Chỉ từ thao tác Đính chính với journal_id/expected_revision. Cả trước/sau inference kiểm revision+signature. Note có chủ đích và revision mới cùng commit; không đổi events/counts/goal/activity/bài. needs_clarification →422 INVALID_INPUT với câu hỏi đã kiểm trong detail, không lưu note/revision hoặc hỏi model lượt chat thứ hai. Hết cache replay lỗi có detail an toàn chung. Note ngày được đưa vào tuần, note tuần không vào ngày.",
+        "x-story-ids": [
+          "US-016",
+          "US-017",
+          "US-018"
+        ],
+        "x-error-codes": [
+          "INVALID_INPUT",
+          "FORBIDDEN",
+          "IDEMPOTENCY_CONFLICT",
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "NOT_FOUND",
+          "VERSION_CONFLICT",
+          "RUN_BUSY",
+          "LOCAL_MODEL_UNAVAILABLE",
+          "MODEL_TIMEOUT",
+          "INVALID_MODEL_OUTPUT",
+          "CONTEXT_LIMIT",
+          "INTERRUPTED"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyJournalCorrect"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journal"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/JournalCorrectResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404NotFound"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409IdempotencyConflictInterruptedRunBusyVersionConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem413PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem415UnsupportedMediaType"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422ContextLimitInvalidInput"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/Problem502InvalidModelOutput"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailableLocalModelUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/Problem504ModelTimeout"
+          }
+        },
+        "security": [
+          {
+            "LocalSession": [],
+            "CsrfToken": []
+          }
+        ],
+        "x-tool-name": "journal.correct",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JournalCorrectInput"
+              },
+              "examples": {
+                "request": {
+                  "$ref": "#/components/examples/JournalCorrectRequest"
+                }
+              }
+            }
+          }
+        },
+        "x-idempotency": {
+          "required": true,
+          "scope": "workspace_id + UUIDv4 key; namespace shared across v1 tools",
+          "key_to_db": "requests.request_id; runs.id when a model run exists",
+          "canonicalization": "tool + validated domain body (default planned_period=day), before current-version/target checks; excludes request_id/security/trace headers",
+          "expiry": "durable receipts never auto-purged; chat reply cache at most 10 minutes",
+          "example_key": "00000000-0000-4000-8000-000000000109"
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "healthRead",
+        "tags": [
+          "Operations"
+        ],
+        "summary": "Kiểm ứng dụng/database, không gọi model.",
+        "description": "Loopback/Host allowlist vẫn áp dụng. Không session/PII/credentials/SQL/provider details; model tắt không làm health thất bại.",
+        "x-story-ids": [],
+        "x-error-codes": [
+          "DATABASE_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "MALFORMED_REQUEST",
+          "METHOD_NOT_ALLOWED",
+          "FORBIDDEN"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Thành công; examples chỉ minh họa, không phải kết quả đã kiểm chất lượng.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControl"
+              },
+              "X-Correlation-ID": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/HealthResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400MalformedRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem403Forbidden"
+          },
+          "405": {
+            "$ref": "#/components/responses/Problem405MethodNotAllowed"
+          },
+          "500": {
+            "$ref": "#/components/responses/Problem500InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503DatabaseUnavailable"
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "LocalSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "studycraft_session",
+        "description": "Signed HttpOnly SameSite=Strict host-only cookie; Path=/; maxAge28800s proposed. Local browser session context, not multi-user identity. Bootstrap via existing HTML page GET / outside API contract. Reuse valid cookie across tabs; no mint per reload. Signing secret stable env (>=32 random bytes), never model/client/log. Payload contains random32byte nonce, issued_at, expires_at and server-bound workspace_id; session MAC domain 'session:v1:' differs from CSRF. Reject expired signature/binding before effects."
+      },
+      "CsrfToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "CSRF proof bound to current signed session; POST requires BOTH cookie and header. Token derived HMAC(signing secret, 'csrf:v1:' + session nonce), exposed only in same-origin HTML/RAM, not localStorage. Restart with same secret preserves session/token until8h expiry; rotate secret invalidates sessions, reopen page before same-key replay. Origin/Host also checked; OpenAPI scheme does not enforce those checks."
+      }
+    },
+    "parameters": {
+      "WorkspaceId": {
+        "name": "workspace_id",
+        "in": "path",
+        "required": true,
+        "description": "Phải bằng workspace được phép trong signed local session; UUID khác không cấp quyền.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID"
+        },
+        "example": "00000000-0000-4000-8000-000000000001"
+      },
+      "RunId": {
+        "name": "run_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/UUID"
+        },
+        "example": "00000000-0000-4000-8000-000000000106"
+      },
+      "HistoryBeforeId": {
+        "name": "before_id",
+        "in": "query",
+        "required": false,
+        "description": "Bỏ để lấy trang đầu; chỉ nhận số nguyên dương, không nhận chuỗi null.",
+        "schema": {
+          "$ref": "#/components/schemas/HistoryCursor"
+        },
+        "example": 102
+      },
+      "HistoryLimit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "$ref": "#/components/schemas/HistoryLimit"
+        },
+        "example": 2
+      },
+      "Origin": {
+        "name": "Origin",
+        "in": "header",
+        "required": true,
+        "description": "Browser gửi; phải trùng chính xác scheme/host/port của web origin cấu hình. Missing/null/khác origin bị từ chối trước receipt.",
+        "schema": {
+          "type": "string",
+          "format": "uri"
+        },
+        "example": "http://127.0.0.1:8000"
+      },
+      "IdempotencyKeyWorkspaceUpdate": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000101"
+      },
+      "IdempotencyKeyMaterialSave": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000102"
+      },
+      "IdempotencyKeyActivitySave": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000103"
+      },
+      "IdempotencyKeyExerciseCreate": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000104"
+      },
+      "IdempotencyKeySubmissionAdd": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000105"
+      },
+      "IdempotencyKeyFeedbackGenerate": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000106"
+      },
+      "IdempotencyKeyChatSend": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000107"
+      },
+      "IdempotencyKeyJournalSummarize": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000108"
+      },
+      "IdempotencyKeyJournalCorrect": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID v4 mới cho ý định mới; cùng key + canonical body/tool để replay. Không gửi request_id trong body.",
+        "schema": {
+          "$ref": "#/components/schemas/UUID",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "example": "00000000-0000-4000-8000-000000000109"
+      }
+    },
+    "headers": {
+      "CacheControl": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        },
+        "description": "Không lưu response dữ liệu/chat trong HTTP cache.",
+        "example": "no-store"
+      },
+      "CorrelationId": {
+        "schema": {
+          "$ref": "#/components/schemas/UUID"
+        },
+        "description": "ID ngẫu nhiên cho mỗi HTTP attempt, khác idempotency UUID; không ghi nội dung học.",
+        "example": "00000000-0000-4000-8000-000000000901"
+      },
+      "Allow": {
+        "schema": {
+          "type": "string"
+        },
+        "description": "Các method được phép cho path thực tế.",
+        "example": "GET"
+      }
+    },
+    "schemas": {
+      "UUID": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "Date": {
+        "type": "string",
+        "format": "date"
+      },
+      "Time": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "NullableUUID": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/UUID"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "NullableDate": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Date"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "Goal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "deadline"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "deadline": {
+            "$ref": "#/components/schemas/NullableDate"
+          }
+        }
+      },
+      "NullableGoal": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Goal"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "Workspace": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "subject",
+          "method",
+          "goal",
+          "study_context",
+          "version",
+          "updated_at",
+          "learner_profile"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "subject": {
+            "const": "english"
+          },
+          "method": {
+            "const": "short_writing"
+          },
+          "goal": {
+            "$ref": "#/components/schemas/NullableGoal"
+          },
+          "study_context": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "learner_profile": {
+            "$ref": "#/components/schemas/LearnerProfile"
+          }
+        }
+      },
+      "Material": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "catalog_id",
+          "title",
+          "description",
+          "content",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "catalog_id": {
+            "$ref": "#/components/schemas/NullableUUID"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "CatalogItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "description",
+          "has_content"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "has_content": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ActivityData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "planned_for",
+          "status",
+          "planned_period"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "planned_for": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "completed",
+              "deferred"
+            ]
+          },
+          "planned_period": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week"
+            ],
+            "default": "day",
+            "description": "Đề xuất từ database-schema: day cho ngày; week có planned_for là thứ Hai. Không suy ra week chỉ từ ngày thứ Hai."
+          }
+        }
+      },
+      "Activity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "data",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ActivityData"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "Exercise": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "prompt",
+          "origin",
+          "material_id",
+          "material_snapshot",
+          "created_at",
+          "template_id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "origin": {
+            "enum": [
+              "user",
+              "template"
+            ]
+          },
+          "material_id": {
+            "$ref": "#/components/schemas/NullableUUID"
+          },
+          "material_snapshot": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Material"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "template_id": {
+            "$ref": "#/components/schemas/NullableUUID"
+          }
+        }
+      },
+      "Submission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "exercise_id",
+          "revision_of",
+          "text",
+          "word_count",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "exercise_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "revision_of": {
+            "$ref": "#/components/schemas/NullableUUID"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 6000
+          },
+          "word_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 300
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "Quote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start",
+          "end",
+          "text"
+        ],
+        "properties": {
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 6000
+          }
+        }
+      },
+      "LearnerProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "self_reported_level",
+          "writing_purpose",
+          "writing_type"
+        ],
+        "properties": {
+          "self_reported_level": {
+            "enum": [
+              "unknown",
+              "beginner",
+              "intermediate",
+              "advanced"
+            ]
+          },
+          "writing_purpose": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 400
+          },
+          "writing_type": {
+            "enum": [
+              "general_paragraph",
+              "personal_email",
+              "short_opinion"
+            ]
+          }
+        }
+      },
+      "WritingPrompt": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "prompt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "Correction": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "criterion",
+              "quote",
+              "replacement",
+              "explanation"
+            ],
+            "properties": {
+              "kind": {
+                "const": "text_edit"
+              },
+              "criterion": {
+                "enum": [
+                  "grammar",
+                  "vocabulary"
+                ]
+              },
+              "quote": {
+                "$ref": "#/components/schemas/Quote"
+              },
+              "replacement": {
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 1000
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 600
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "criterion",
+              "quote",
+              "replacement",
+              "explanation"
+            ],
+            "properties": {
+              "kind": {
+                "const": "content_issue"
+              },
+              "criterion": {
+                "enum": [
+                  "task_response",
+                  "organization"
+                ]
+              },
+              "quote": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Quote"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "replacement": {
+                "type": "null"
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 600
+              }
+            }
+          }
+        ]
+      },
+      "CorrectionData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "summary",
+          "corrections",
+          "limitations"
+        ],
+        "properties": {
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 800
+          },
+          "corrections": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "$ref": "#/components/schemas/Correction"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          }
+        }
+      },
+      "Feedback": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "submission_id",
+          "run_id",
+          "rubric_version",
+          "data",
+          "corrected_text",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "submission_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "run_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "rubric_version": {
+            "const": "correction-v2"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CorrectionData"
+          },
+          "corrected_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "LearningReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "period",
+          "start_date",
+          "end_date",
+          "statement",
+          "origin",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "period": {
+            "enum": [
+              "day",
+              "week"
+            ]
+          },
+          "start_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "end_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "origin": {
+            "const": "user_report"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "AppCounts": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "submitted_drafts",
+          "feedback_results",
+          "completion_confirmations"
+        ],
+        "properties": {
+          "submitted_drafts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "feedback_results": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completion_confirmations": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "JournalContent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "learner_summary",
+          "app_counts",
+          "limitations"
+        ],
+        "properties": {
+          "learner_summary": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000
+          },
+          "app_counts": {
+            "$ref": "#/components/schemas/AppCounts"
+          },
+          "limitations": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        }
+      },
+      "Journal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "period",
+          "start_date",
+          "end_date",
+          "revision",
+          "content",
+          "source_report_ids",
+          "source_event_ids",
+          "source_correction_ids",
+          "source_signature",
+          "status",
+          "editor",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "period": {
+            "enum": [
+              "day",
+              "week"
+            ]
+          },
+          "start_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "end_date": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content": {
+            "$ref": "#/components/schemas/JournalContent"
+          },
+          "source_report_ids": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          "source_event_ids": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          "source_correction_ids": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          "source_signature": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "status": {
+            "enum": [
+              "current",
+              "stale"
+            ]
+          },
+          "editor": {
+            "enum": [
+              "ai",
+              "user_correction"
+            ]
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "RecentMessage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "text"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          }
+        }
+      },
+      "ChatResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "reply",
+          "saved_reports"
+        ],
+        "properties": {
+          "run_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "reply": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "saved_reports": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "$ref": "#/components/schemas/LearningReport"
+            }
+          }
+        }
+      },
+      "Run": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "workspace_id",
+          "operation",
+          "status",
+          "error_code",
+          "result_ids",
+          "model",
+          "input_tokens",
+          "output_tokens",
+          "context_truncated",
+          "started_at",
+          "finished_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "operation": {
+            "enum": [
+              "feedback.generate",
+              "chat.send",
+              "journal.summarize",
+              "journal.correct"
+            ]
+          },
+          "status": {
+            "enum": [
+              "running",
+              "succeeded",
+              "failed",
+              "interrupted"
+            ]
+          },
+          "error_code": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result_ids": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "$ref": "#/components/schemas/UUID"
+            }
+          },
+          "model": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_tokens": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output_tokens": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context_truncated": {
+            "type": "boolean"
+          },
+          "started_at": {
+            "$ref": "#/components/schemas/Time"
+          },
+          "finished_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "HistoryItem": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HistoryExerciseItem"
+          },
+          {
+            "$ref": "#/components/schemas/HistorySubmissionItem"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryFeedbackItem"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryJournalItem"
+          }
+        ],
+        "description": "kind quyết định schema data. entity_id phải bằng data.id; journal_revision phải bằng data.revision cho journal."
+      },
+      "ActivityInputData": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "planned_for",
+          "status"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "planned_for": {
+            "$ref": "#/components/schemas/NullableDate"
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "completed",
+              "deferred"
+            ]
+          },
+          "planned_period": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week"
+            ],
+            "default": "day",
+            "description": "Đề xuất từ database-schema: day cho ngày; week có planned_for là thứ Hai. Không suy ra week chỉ từ ngày thứ Hai."
+          }
+        },
+        "description": "Nếu bỏ planned_period, server điền day trước khi gọi tool/hash. UI chọn tuần phải gửi week rõ ràng."
+      },
+      "HistoryCursor": {
+        "type": "integer",
+        "format": "int64",
+        "minimum": 1
+      },
+      "HistoryLimit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50,
+        "default": 20
+      },
+      "HistoryExerciseItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "entity_id",
+          "journal_revision",
+          "data",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "exercise"
+          },
+          "entity_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "journal_revision": {
+            "type": "null"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Exercise"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "HistorySubmissionItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "entity_id",
+          "journal_revision",
+          "data",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "submission"
+          },
+          "entity_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "journal_revision": {
+            "type": "null"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Submission"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "HistoryFeedbackItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "entity_id",
+          "journal_revision",
+          "data",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "feedback"
+          },
+          "entity_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "journal_revision": {
+            "type": "null"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Feedback"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "HistoryJournalItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "entity_id",
+          "journal_revision",
+          "data",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "journal"
+          },
+          "entity_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "journal_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "data": {
+            "$ref": "#/components/schemas/Journal"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/Time"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "database"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "database": {
+            "type": "string",
+            "const": "available"
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "RFC 9457-style. StudyCraft yêu cầu đủ base fields và extensions bên dưới; client bỏ qua extension chưa biết. status bằng HTTP status. Không echo raw input/provider errors.",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code",
+          "retryable",
+          "run_id",
+          "correlation_id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "enum": [
+              "urn:studycraft:problem:invalid-input",
+              "urn:studycraft:problem:forbidden",
+              "urn:studycraft:problem:not-found",
+              "urn:studycraft:problem:version-conflict",
+              "urn:studycraft:problem:idempotency-conflict",
+              "urn:studycraft:problem:run-busy",
+              "urn:studycraft:problem:local-model-unavailable",
+              "urn:studycraft:problem:model-timeout",
+              "urn:studycraft:problem:invalid-model-output",
+              "urn:studycraft:problem:context-limit",
+              "urn:studycraft:problem:result-expired",
+              "urn:studycraft:problem:interrupted",
+              "urn:studycraft:problem:database-unavailable",
+              "urn:studycraft:problem:malformed-request",
+              "urn:studycraft:problem:method-not-allowed",
+              "urn:studycraft:problem:payload-too-large",
+              "urn:studycraft:problem:unsupported-media-type",
+              "urn:studycraft:problem:internal-error"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "status": {
+            "type": "integer",
+            "enum": [
+              400,
+              403,
+              404,
+              405,
+              409,
+              413,
+              415,
+              422,
+              500,
+              502,
+              503,
+              504
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^urn:studycraft:request:[0-9a-f-]{36}$"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "INVALID_INPUT",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "VERSION_CONFLICT",
+              "IDEMPOTENCY_CONFLICT",
+              "RUN_BUSY",
+              "LOCAL_MODEL_UNAVAILABLE",
+              "MODEL_TIMEOUT",
+              "INVALID_MODEL_OUTPUT",
+              "CONTEXT_LIMIT",
+              "RESULT_EXPIRED",
+              "INTERRUPTED",
+              "DATABASE_UNAVAILABLE",
+              "MALFORMED_REQUEST",
+              "METHOD_NOT_ALLOWED",
+              "PAYLOAD_TOO_LARGE",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "INTERNAL_ERROR"
+            ]
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "run_id": {
+            "$ref": "#/components/schemas/NullableUUID"
+          },
+          "correlation_id": {
+            "$ref": "#/components/schemas/UUID"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "INVALID_INPUT"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 422
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:invalid-input"
+                },
+                "title": {
+                  "const": "Invalid input"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "FORBIDDEN"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 403
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:forbidden"
+                },
+                "title": {
+                  "const": "Forbidden"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "NOT_FOUND"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 404
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:not-found"
+                },
+                "title": {
+                  "const": "Not found"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "VERSION_CONFLICT"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 409
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:version-conflict"
+                },
+                "title": {
+                  "const": "Version conflict"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "IDEMPOTENCY_CONFLICT"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 409
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:idempotency-conflict"
+                },
+                "title": {
+                  "const": "Idempotency conflict"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "RUN_BUSY"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 409
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:run-busy"
+                },
+                "title": {
+                  "const": "Run busy"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "LOCAL_MODEL_UNAVAILABLE"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 503
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:local-model-unavailable"
+                },
+                "title": {
+                  "const": "Local model unavailable"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "MODEL_TIMEOUT"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 504
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:model-timeout"
+                },
+                "title": {
+                  "const": "Model timeout"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "INVALID_MODEL_OUTPUT"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 502
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:invalid-model-output"
+                },
+                "title": {
+                  "const": "Invalid model output"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "CONTEXT_LIMIT"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 422
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:context-limit"
+                },
+                "title": {
+                  "const": "Context limit"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "RESULT_EXPIRED"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 409
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:result-expired"
+                },
+                "title": {
+                  "const": "Result expired"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "INTERRUPTED"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 409
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:interrupted"
+                },
+                "title": {
+                  "const": "Interrupted"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "DATABASE_UNAVAILABLE"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 503
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:database-unavailable"
+                },
+                "title": {
+                  "const": "Database unavailable"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "MALFORMED_REQUEST"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 400
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:malformed-request"
+                },
+                "title": {
+                  "const": "Malformed request"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "METHOD_NOT_ALLOWED"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 405
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:method-not-allowed"
+                },
+                "title": {
+                  "const": "Method not allowed"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "PAYLOAD_TOO_LARGE"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 413
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:payload-too-large"
+                },
+                "title": {
+                  "const": "Payload too large"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "UNSUPPORTED_MEDIA_TYPE"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 415
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:unsupported-media-type"
+                },
+                "title": {
+                  "const": "Unsupported media type"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "code": {
+                  "const": "INTERNAL_ERROR"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "status": {
+                  "const": 500
+                },
+                "type": {
+                  "const": "urn:studycraft:problem:internal-error"
+                },
+                "title": {
+                  "const": "Internal error"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "WorkspaceUpdateInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "expected_version",
+          "goal",
+          "study_context",
+          "learner_profile"
+        ],
+        "properties": {
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "goal": {
+            "$ref": "#/components/schemas/NullableGoal"
+          },
+          "study_context": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 4000
+          },
+          "learner_profile": {
+            "$ref": "#/components/schemas/LearnerProfile"
+          }
+        }
+      },
+      "MaterialSaveInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workspace_id",
+              "expected_version",
+              "mode",
+              "catalog_id"
+            ],
+            "properties": {
+              "workspace_id": {
+                "$ref": "#/components/schemas/UUID"
+              },
+              "expected_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "mode": {
+                "const": "catalog"
+              },
+              "catalog_id": {
+                "$ref": "#/components/schemas/UUID"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workspace_id",
+              "expected_version",
+              "mode",
+              "material_id",
+              "title",
+              "description",
+              "content"
+            ],
+            "properties": {
+              "workspace_id": {
+                "$ref": "#/components/schemas/UUID"
+              },
+              "expected_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "mode": {
+                "const": "user"
+              },
+              "material_id": {
+                "$ref": "#/components/schemas/NullableUUID"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "content": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 20000
+              }
+            }
+          }
+        ]
+      },
+      "ActivitySaveInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "expected_version",
+          "activity_id",
+          "data"
+        ],
+        "properties": {
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activity_id": {
+            "$ref": "#/components/schemas/NullableUUID"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ActivityInputData"
+          }
+        }
+      },
+      "ExerciseCreateInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workspace_id",
+              "mode",
+              "prompt",
+              "material_id"
+            ],
+            "properties": {
+              "workspace_id": {
+                "$ref": "#/components/schemas/UUID"
+              },
+              "mode": {
+                "const": "user"
+              },
+              "prompt": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "material_id": {
+                "$ref": "#/components/schemas/NullableUUID"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workspace_id",
+              "mode",
+              "template_id",
+              "material_id"
+            ],
+            "properties": {
+              "workspace_id": {
+                "$ref": "#/components/schemas/UUID"
+              },
+              "mode": {
+                "const": "template"
+              },
+              "template_id": {
+                "$ref": "#/components/schemas/UUID"
+              },
+              "material_id": {
+                "$ref": "#/components/schemas/NullableUUID"
+              }
+            }
+          }
+        ]
+      },
+      "SubmissionAddInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "exercise_id",
+          "revision_of",
+          "text"
+        ],
+        "properties": {
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "exercise_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "revision_of": {
+            "$ref": "#/components/schemas/NullableUUID"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 6000
+          }
+        }
+      },
+      "FeedbackGenerateInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "submission_id"
+        ],
+        "properties": {
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "submission_id": {
+            "$ref": "#/components/schemas/UUID"
+          }
+        }
+      },
+      "ChatSendInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "text",
+          "recent_messages",
+          "feedback_id"
+        ],
+        "properties": {
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "recent_messages": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/components/schemas/RecentMessage"
+            }
+          },
+          "feedback_id": {
+            "$ref": "#/components/schemas/NullableUUID"
+          }
+        }
+      },
+      "JournalSummarizeInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "period",
+          "anchor_date"
+        ],
+        "properties": {
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "period": {
+            "enum": [
+              "day",
+              "week"
+            ]
+          },
+          "anchor_date": {
+            "$ref": "#/components/schemas/Date"
+          }
+        }
+      },
+      "JournalCorrectInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "journal_id",
+          "expected_revision",
+          "instruction"
+        ],
+        "properties": {
+          "workspace_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "journal_id": {
+            "$ref": "#/components/schemas/UUID"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "instruction": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      },
+      "WorkspaceReadResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workspace",
+          "materials",
+          "catalog",
+          "activities",
+          "journals",
+          "writing_prompts"
+        ],
+        "properties": {
+          "workspace": {
+            "$ref": "#/components/schemas/Workspace"
+          },
+          "materials": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/Material"
+            }
+          },
+          "catalog": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/CatalogItem"
+            }
+          },
+          "activities": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/Activity"
+            }
+          },
+          "journals": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/Journal"
+            }
+          },
+          "writing_prompts": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/WritingPrompt"
+            }
+          }
+        }
+      },
+      "HistoryListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_before_id"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/HistoryItem"
+            }
+          },
+          "next_before_id": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Problem400MalformedRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 400
+              },
+              "code": {
+                "enum": [
+                  "MALFORMED_REQUEST"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem403Forbidden": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 403
+              },
+              "code": {
+                "enum": [
+                  "FORBIDDEN"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem404NotFound": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 404
+              },
+              "code": {
+                "enum": [
+                  "NOT_FOUND"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem405MethodNotAllowed": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 405
+              },
+              "code": {
+                "enum": [
+                  "METHOD_NOT_ALLOWED"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem500InternalError": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 500
+              },
+              "code": {
+                "enum": [
+                  "INTERNAL_ERROR"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem503DatabaseUnavailable": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 503
+              },
+              "code": {
+                "enum": [
+                  "DATABASE_UNAVAILABLE"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem422InvalidInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 422
+              },
+              "code": {
+                "enum": [
+                  "INVALID_INPUT"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem409IdempotencyConflictVersionConflict": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 409
+              },
+              "code": {
+                "enum": [
+                  "IDEMPOTENCY_CONFLICT",
+                  "VERSION_CONFLICT"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem413PayloadTooLarge": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 413
+              },
+              "code": {
+                "enum": [
+                  "PAYLOAD_TOO_LARGE"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem415UnsupportedMediaType": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 415
+              },
+              "code": {
+                "enum": [
+                  "UNSUPPORTED_MEDIA_TYPE"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem409IdempotencyConflict": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 409
+              },
+              "code": {
+                "enum": [
+                  "IDEMPOTENCY_CONFLICT"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem409IdempotencyConflictInterruptedRunBusy": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 409
+              },
+              "code": {
+                "enum": [
+                  "IDEMPOTENCY_CONFLICT",
+                  "INTERRUPTED",
+                  "RUN_BUSY"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem422ContextLimitInvalidInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 422
+              },
+              "code": {
+                "enum": [
+                  "CONTEXT_LIMIT",
+                  "INVALID_INPUT"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem502InvalidModelOutput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 502
+              },
+              "code": {
+                "enum": [
+                  "INVALID_MODEL_OUTPUT"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem503DatabaseUnavailableLocalModelUnavailable": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 503
+              },
+              "code": {
+                "enum": [
+                  "DATABASE_UNAVAILABLE",
+                  "LOCAL_MODEL_UNAVAILABLE"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem504ModelTimeout": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 504
+              },
+              "code": {
+                "enum": [
+                  "MODEL_TIMEOUT"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem409IdempotencyConflictInterruptedResultExpiredRunBusy": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 409
+              },
+              "code": {
+                "enum": [
+                  "IDEMPOTENCY_CONFLICT",
+                  "INTERRUPTED",
+                  "RESULT_EXPIRED",
+                  "RUN_BUSY"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "Problem409IdempotencyConflictInterruptedRunBusyVersionConflict": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "const": 409
+              },
+              "code": {
+                "enum": [
+                  "IDEMPOTENCY_CONFLICT",
+                  "INTERRUPTED",
+                  "RUN_BUSY",
+                  "VERSION_CONFLICT"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "responses": {
+      "Problem400MalformedRequest": {
+        "description": "MALFORMED_REQUEST. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem400MalformedRequest"
+            },
+            "examples": {
+              "MALFORMED_REQUEST": {
+                "$ref": "#/components/examples/ProblemMALFORMED_REQUEST"
+              }
+            }
+          }
+        }
+      },
+      "Problem403Forbidden": {
+        "description": "FORBIDDEN. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem403Forbidden"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "$ref": "#/components/examples/ProblemFORBIDDEN"
+              }
+            }
+          }
+        }
+      },
+      "Problem404NotFound": {
+        "description": "NOT_FOUND. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem404NotFound"
+            },
+            "examples": {
+              "NOT_FOUND": {
+                "$ref": "#/components/examples/ProblemNOT_FOUND"
+              }
+            }
+          }
+        }
+      },
+      "Problem405MethodNotAllowed": {
+        "description": "METHOD_NOT_ALLOWED. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          },
+          "Allow": {
+            "$ref": "#/components/headers/Allow"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem405MethodNotAllowed"
+            },
+            "examples": {
+              "METHOD_NOT_ALLOWED": {
+                "$ref": "#/components/examples/ProblemMETHOD_NOT_ALLOWED"
+              }
+            }
+          }
+        }
+      },
+      "Problem500InternalError": {
+        "description": "INTERNAL_ERROR. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem500InternalError"
+            },
+            "examples": {
+              "INTERNAL_ERROR": {
+                "$ref": "#/components/examples/ProblemINTERNAL_ERROR"
+              }
+            }
+          }
+        }
+      },
+      "Problem503DatabaseUnavailable": {
+        "description": "DATABASE_UNAVAILABLE. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem503DatabaseUnavailable"
+            },
+            "examples": {
+              "DATABASE_UNAVAILABLE": {
+                "$ref": "#/components/examples/ProblemDATABASE_UNAVAILABLE"
+              }
+            }
+          }
+        }
+      },
+      "Problem422InvalidInput": {
+        "description": "INVALID_INPUT. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem422InvalidInput"
+            },
+            "examples": {
+              "INVALID_INPUT": {
+                "$ref": "#/components/examples/ProblemINVALID_INPUT"
+              }
+            }
+          }
+        }
+      },
+      "Problem409IdempotencyConflictVersionConflict": {
+        "description": "IDEMPOTENCY_CONFLICT, VERSION_CONFLICT. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem409IdempotencyConflictVersionConflict"
+            },
+            "examples": {
+              "IDEMPOTENCY_CONFLICT": {
+                "$ref": "#/components/examples/ProblemIDEMPOTENCY_CONFLICT"
+              },
+              "VERSION_CONFLICT": {
+                "$ref": "#/components/examples/ProblemVERSION_CONFLICT"
+              }
+            }
+          }
+        }
+      },
+      "Problem413PayloadTooLarge": {
+        "description": "PAYLOAD_TOO_LARGE. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem413PayloadTooLarge"
+            },
+            "examples": {
+              "PAYLOAD_TOO_LARGE": {
+                "$ref": "#/components/examples/ProblemPAYLOAD_TOO_LARGE"
+              }
+            }
+          }
+        }
+      },
+      "Problem415UnsupportedMediaType": {
+        "description": "UNSUPPORTED_MEDIA_TYPE. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem415UnsupportedMediaType"
+            },
+            "examples": {
+              "UNSUPPORTED_MEDIA_TYPE": {
+                "$ref": "#/components/examples/ProblemUNSUPPORTED_MEDIA_TYPE"
+              }
+            }
+          }
+        }
+      },
+      "Problem409IdempotencyConflict": {
+        "description": "IDEMPOTENCY_CONFLICT. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem409IdempotencyConflict"
+            },
+            "examples": {
+              "IDEMPOTENCY_CONFLICT": {
+                "$ref": "#/components/examples/ProblemIDEMPOTENCY_CONFLICT"
+              }
+            }
+          }
+        }
+      },
+      "Problem409IdempotencyConflictInterruptedRunBusy": {
+        "description": "IDEMPOTENCY_CONFLICT, INTERRUPTED, RUN_BUSY. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem409IdempotencyConflictInterruptedRunBusy"
+            },
+            "examples": {
+              "IDEMPOTENCY_CONFLICT": {
+                "$ref": "#/components/examples/ProblemIDEMPOTENCY_CONFLICT"
+              },
+              "INTERRUPTED": {
+                "$ref": "#/components/examples/ProblemINTERRUPTED"
+              },
+              "RUN_BUSY": {
+                "$ref": "#/components/examples/ProblemRUN_BUSY"
+              }
+            }
+          }
+        }
+      },
+      "Problem422ContextLimitInvalidInput": {
+        "description": "CONTEXT_LIMIT, INVALID_INPUT. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem422ContextLimitInvalidInput"
+            },
+            "examples": {
+              "CONTEXT_LIMIT": {
+                "$ref": "#/components/examples/ProblemCONTEXT_LIMIT"
+              },
+              "INVALID_INPUT": {
+                "$ref": "#/components/examples/ProblemINVALID_INPUT"
+              }
+            }
+          }
+        }
+      },
+      "Problem502InvalidModelOutput": {
+        "description": "INVALID_MODEL_OUTPUT. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem502InvalidModelOutput"
+            },
+            "examples": {
+              "INVALID_MODEL_OUTPUT": {
+                "$ref": "#/components/examples/ProblemINVALID_MODEL_OUTPUT"
+              }
+            }
+          }
+        }
+      },
+      "Problem503DatabaseUnavailableLocalModelUnavailable": {
+        "description": "DATABASE_UNAVAILABLE, LOCAL_MODEL_UNAVAILABLE. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem503DatabaseUnavailableLocalModelUnavailable"
+            },
+            "examples": {
+              "DATABASE_UNAVAILABLE": {
+                "$ref": "#/components/examples/ProblemDATABASE_UNAVAILABLE"
+              },
+              "LOCAL_MODEL_UNAVAILABLE": {
+                "$ref": "#/components/examples/ProblemLOCAL_MODEL_UNAVAILABLE"
+              }
+            }
+          }
+        }
+      },
+      "Problem504ModelTimeout": {
+        "description": "MODEL_TIMEOUT. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem504ModelTimeout"
+            },
+            "examples": {
+              "MODEL_TIMEOUT": {
+                "$ref": "#/components/examples/ProblemMODEL_TIMEOUT"
+              }
+            }
+          }
+        }
+      },
+      "Problem409IdempotencyConflictInterruptedResultExpiredRunBusy": {
+        "description": "IDEMPOTENCY_CONFLICT, INTERRUPTED, RESULT_EXPIRED, RUN_BUSY. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem409IdempotencyConflictInterruptedResultExpiredRunBusy"
+            },
+            "examples": {
+              "IDEMPOTENCY_CONFLICT": {
+                "$ref": "#/components/examples/ProblemIDEMPOTENCY_CONFLICT"
+              },
+              "INTERRUPTED": {
+                "$ref": "#/components/examples/ProblemINTERRUPTED"
+              },
+              "RESULT_EXPIRED": {
+                "$ref": "#/components/examples/ProblemRESULT_EXPIRED"
+              },
+              "RUN_BUSY": {
+                "$ref": "#/components/examples/ProblemRUN_BUSY"
+              }
+            }
+          }
+        }
+      },
+      "Problem409IdempotencyConflictInterruptedRunBusyVersionConflict": {
+        "description": "IDEMPOTENCY_CONFLICT, INTERRUPTED, RUN_BUSY, VERSION_CONFLICT. Xem x-error-catalog; không raw input/provider output.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControl"
+          },
+          "X-Correlation-ID": {
+            "$ref": "#/components/headers/CorrelationId"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem409IdempotencyConflictInterruptedRunBusyVersionConflict"
+            },
+            "examples": {
+              "IDEMPOTENCY_CONFLICT": {
+                "$ref": "#/components/examples/ProblemIDEMPOTENCY_CONFLICT"
+              },
+              "INTERRUPTED": {
+                "$ref": "#/components/examples/ProblemINTERRUPTED"
+              },
+              "RUN_BUSY": {
+                "$ref": "#/components/examples/ProblemRUN_BUSY"
+              },
+              "VERSION_CONFLICT": {
+                "$ref": "#/components/examples/ProblemVERSION_CONFLICT"
+              }
+            }
+          }
+        }
+      }
+    },
+    "examples": {
+      "WorkspaceReadResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace": {
+            "id": "00000000-0000-4000-8000-000000000001",
+            "subject": "english",
+            "method": "short_writing",
+            "goal": {
+              "text": "Luyện viết tiếng Anh đều đặn.",
+              "deadline": null
+            },
+            "study_context": "Ưu tiên sửa lỗi trong bài đã hoàn thành.",
+            "version": 0,
+            "updated_at": "2026-10-08T03:00:00Z",
+            "learner_profile": {
+              "self_reported_level": "unknown",
+              "writing_purpose": "Luyện viết ngắn để chuẩn bị IELTS.",
+              "writing_type": "general_paragraph"
+            }
+          },
+          "materials": [
+            {
+              "id": "00000000-0000-4000-8000-000000000002",
+              "workspace_id": "00000000-0000-4000-8000-000000000001",
+              "catalog_id": null,
+              "title": "Daily routines",
+              "description": "Ghi chú luyện viết.",
+              "content": "With I, use the base form of the verb: I go.",
+              "created_at": "2026-10-08T03:00:00Z"
+            }
+          ],
+          "catalog": [
+            {
+              "id": "00000000-0000-4000-8000-000000000011",
+              "title": "English grammar",
+              "description": "Mục danh mục chỉ có tên.",
+              "has_content": false
+            }
+          ],
+          "activities": [
+            {
+              "id": "00000000-0000-4000-8000-000000000007",
+              "workspace_id": "00000000-0000-4000-8000-000000000001",
+              "data": {
+                "title": "Luyện một bài viết ngắn",
+                "planned_period": "day",
+                "planned_for": "2026-10-08",
+                "status": "planned"
+              },
+              "created_at": "2026-10-08T03:00:00Z",
+              "updated_at": "2026-10-08T03:00:00Z"
+            }
+          ],
+          "journals": [
+            {
+              "id": "00000000-0000-4000-8000-000000000009",
+              "workspace_id": "00000000-0000-4000-8000-000000000001",
+              "period": "day",
+              "start_date": "2026-10-08",
+              "end_date": "2026-10-08",
+              "revision": 1,
+              "content": {
+                "learner_summary": "Đã luyện viết một câu về thói quen hằng ngày.",
+                "app_counts": {
+                  "submitted_drafts": 1,
+                  "feedback_results": 1,
+                  "completion_confirmations": 1
+                },
+                "limitations": []
+              },
+              "source_report_ids": [
+                "00000000-0000-4000-8000-000000000008"
+              ],
+              "source_event_ids": [
+                "00000000-0000-4000-8000-000000000301",
+                "00000000-0000-4000-8000-000000000302",
+                "00000000-0000-4000-8000-000000000303"
+              ],
+              "source_correction_ids": [],
+              "source_signature": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "current",
+              "editor": "ai",
+              "updated_at": "2026-10-08T03:01:00Z"
+            }
+          ],
+          "writing_prompts": [
+            {
+              "id": "00000000-0000-4000-8000-000000000003",
+              "prompt": "Write one sentence about your daily routine."
+            }
+          ]
+        }
+      },
+      "WorkspaceUpdateRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "expected_version": 0,
+          "goal": {
+            "text": "Luyện viết tiếng Anh đều đặn.",
+            "deadline": null
+          },
+          "study_context": "Ưu tiên sửa lỗi trong bài đã hoàn thành.",
+          "learner_profile": {
+            "self_reported_level": "unknown",
+            "writing_purpose": "Luyện viết ngắn để chuẩn bị IELTS.",
+            "writing_type": "general_paragraph"
+          }
+        }
+      },
+      "WorkspaceUpdateResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "subject": "english",
+          "method": "short_writing",
+          "goal": {
+            "text": "Luyện viết tiếng Anh đều đặn.",
+            "deadline": null
+          },
+          "study_context": "Ưu tiên sửa lỗi trong bài đã hoàn thành.",
+          "version": 1,
+          "updated_at": "2026-10-08T03:01:00Z",
+          "learner_profile": {
+            "self_reported_level": "unknown",
+            "writing_purpose": "Luyện viết ngắn để chuẩn bị IELTS.",
+            "writing_type": "general_paragraph"
+          }
+        }
+      },
+      "MaterialSaveRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "expected_version": 0,
+          "mode": "user",
+          "material_id": null,
+          "title": "Daily routines",
+          "description": "Ghi chú luyện viết.",
+          "content": "With I, use the base form of the verb: I go."
+        }
+      },
+      "MaterialSaveResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "catalog_id": null,
+          "title": "Daily routines",
+          "description": "Ghi chú luyện viết.",
+          "content": "With I, use the base form of the verb: I go.",
+          "created_at": "2026-10-08T03:00:00Z"
+        }
+      },
+      "ActivitySaveRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "expected_version": 0,
+          "activity_id": "00000000-0000-4000-8000-000000000007",
+          "data": {
+            "title": "Luyện một bài viết ngắn",
+            "planned_period": "day",
+            "planned_for": "2026-10-08",
+            "status": "completed"
+          }
+        }
+      },
+      "ActivitySaveResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000007",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "data": {
+            "title": "Luyện một bài viết ngắn",
+            "planned_period": "day",
+            "planned_for": "2026-10-08",
+            "status": "completed"
+          },
+          "created_at": "2026-10-08T03:00:00Z",
+          "updated_at": "2026-10-08T03:01:00Z"
+        }
+      },
+      "ExerciseCreateRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "mode": "template",
+          "template_id": "00000000-0000-4000-8000-000000000003",
+          "material_id": "00000000-0000-4000-8000-000000000002"
+        }
+      },
+      "ExerciseCreateResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000004",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "prompt": "Write one sentence about your daily routine.",
+          "origin": "template",
+          "material_id": "00000000-0000-4000-8000-000000000002",
+          "material_snapshot": {
+            "id": "00000000-0000-4000-8000-000000000002",
+            "workspace_id": "00000000-0000-4000-8000-000000000001",
+            "catalog_id": null,
+            "title": "Daily routines",
+            "description": "Ghi chú luyện viết.",
+            "content": "With I, use the base form of the verb: I go.",
+            "created_at": "2026-10-08T03:00:00Z"
+          },
+          "created_at": "2026-10-08T03:00:00Z",
+          "template_id": "00000000-0000-4000-8000-000000000003"
+        }
+      },
+      "SubmissionAddRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "exercise_id": "00000000-0000-4000-8000-000000000004",
+          "revision_of": null,
+          "text": "I goes to school."
+        }
+      },
+      "SubmissionAddResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000005",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "exercise_id": "00000000-0000-4000-8000-000000000004",
+          "revision_of": null,
+          "text": "I goes to school.",
+          "word_count": 4,
+          "created_at": "2026-10-08T03:00:00Z"
+        }
+      },
+      "FeedbackGenerateRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "submission_id": "00000000-0000-4000-8000-000000000005"
+        }
+      },
+      "FeedbackGenerateResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000006",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "submission_id": "00000000-0000-4000-8000-000000000005",
+          "run_id": "00000000-0000-4000-8000-000000000106",
+          "rubric_version": "correction-v2",
+          "data": {
+            "summary": "Sửa động từ với chủ ngữ I.",
+            "corrections": [
+              {
+                "kind": "text_edit",
+                "criterion": "grammar",
+                "quote": {
+                  "start": 2,
+                  "end": 6,
+                  "text": "goes"
+                },
+                "replacement": "go",
+                "explanation": "Dùng I go thay vì I goes."
+              }
+            ],
+            "limitations": []
+          },
+          "corrected_text": "I go to school.",
+          "created_at": "2026-10-08T03:01:00Z"
+        }
+      },
+      "ChatSendRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "text": "Hôm nay tôi đã luyện viết một câu về thói quen hằng ngày.",
+          "recent_messages": [],
+          "feedback_id": null
+        }
+      },
+      "ChatSendResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "run_id": "00000000-0000-4000-8000-000000000107",
+          "reply": "Đã lưu ghi chú học hôm nay.",
+          "saved_reports": [
+            {
+              "id": "00000000-0000-4000-8000-000000000008",
+              "workspace_id": "00000000-0000-4000-8000-000000000001",
+              "period": "day",
+              "start_date": "2026-10-08",
+              "end_date": "2026-10-08",
+              "statement": "Đã luyện viết một câu về thói quen hằng ngày.",
+              "origin": "user_report",
+              "created_at": "2026-10-08T03:01:00Z"
+            }
+          ]
+        }
+      },
+      "JournalSummarizeRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "period": "day",
+          "anchor_date": "2026-10-08"
+        }
+      },
+      "JournalSummarizeResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000009",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "period": "day",
+          "start_date": "2026-10-08",
+          "end_date": "2026-10-08",
+          "revision": 1,
+          "content": {
+            "learner_summary": "Đã luyện viết một câu về thói quen hằng ngày.",
+            "app_counts": {
+              "submitted_drafts": 1,
+              "feedback_results": 1,
+              "completion_confirmations": 1
+            },
+            "limitations": []
+          },
+          "source_report_ids": [
+            "00000000-0000-4000-8000-000000000008"
+          ],
+          "source_event_ids": [
+            "00000000-0000-4000-8000-000000000301",
+            "00000000-0000-4000-8000-000000000302",
+            "00000000-0000-4000-8000-000000000303"
+          ],
+          "source_correction_ids": [],
+          "source_signature": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "status": "current",
+          "editor": "ai",
+          "updated_at": "2026-10-08T03:01:00Z"
+        }
+      },
+      "JournalCorrectRequest": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "journal_id": "00000000-0000-4000-8000-000000000009",
+          "expected_revision": 1,
+          "instruction": "Tôi chỉ luyện một câu, chưa hoàn thành cả bài viết."
+        }
+      },
+      "JournalCorrectResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000009",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "period": "day",
+          "start_date": "2026-10-08",
+          "end_date": "2026-10-08",
+          "revision": 2,
+          "content": {
+            "learner_summary": "Tự khai báo đã luyện một câu; chưa hoàn thành cả bài viết.",
+            "app_counts": {
+              "submitted_drafts": 1,
+              "feedback_results": 1,
+              "completion_confirmations": 1
+            },
+            "limitations": []
+          },
+          "source_report_ids": [
+            "00000000-0000-4000-8000-000000000008"
+          ],
+          "source_event_ids": [
+            "00000000-0000-4000-8000-000000000301",
+            "00000000-0000-4000-8000-000000000302",
+            "00000000-0000-4000-8000-000000000303"
+          ],
+          "source_correction_ids": [
+            "00000000-0000-4000-8000-000000000010"
+          ],
+          "source_signature": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "status": "current",
+          "editor": "user_correction",
+          "updated_at": "2026-10-08T03:01:00Z"
+        }
+      },
+      "HistoryListResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "items": [
+            {
+              "id": 101,
+              "kind": "feedback",
+              "entity_id": "00000000-0000-4000-8000-000000000006",
+              "journal_revision": null,
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000006",
+                "workspace_id": "00000000-0000-4000-8000-000000000001",
+                "submission_id": "00000000-0000-4000-8000-000000000005",
+                "run_id": "00000000-0000-4000-8000-000000000106",
+                "rubric_version": "correction-v2",
+                "data": {
+                  "summary": "Sửa động từ với chủ ngữ I.",
+                  "corrections": [
+                    {
+                      "kind": "text_edit",
+                      "criterion": "grammar",
+                      "quote": {
+                        "start": 2,
+                        "end": 6,
+                        "text": "goes"
+                      },
+                      "replacement": "go",
+                      "explanation": "Dùng I go thay vì I goes."
+                    }
+                  ],
+                  "limitations": []
+                },
+                "corrected_text": "I go to school.",
+                "created_at": "2026-10-08T03:01:00Z"
+              },
+              "created_at": "2026-10-08T03:01:00Z"
+            },
+            {
+              "id": 100,
+              "kind": "submission",
+              "entity_id": "00000000-0000-4000-8000-000000000005",
+              "journal_revision": null,
+              "data": {
+                "id": "00000000-0000-4000-8000-000000000005",
+                "workspace_id": "00000000-0000-4000-8000-000000000001",
+                "exercise_id": "00000000-0000-4000-8000-000000000004",
+                "revision_of": null,
+                "text": "I goes to school.",
+                "word_count": 4,
+                "created_at": "2026-10-08T03:00:00Z"
+              },
+              "created_at": "2026-10-08T03:00:00Z"
+            }
+          ],
+          "next_before_id": 100
+        }
+      },
+      "RunReadResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "id": "00000000-0000-4000-8000-000000000106",
+          "workspace_id": "00000000-0000-4000-8000-000000000001",
+          "operation": "feedback.generate",
+          "status": "succeeded",
+          "error_code": null,
+          "result_ids": [
+            "00000000-0000-4000-8000-000000000006"
+          ],
+          "model": "fake",
+          "input_tokens": null,
+          "output_tokens": null,
+          "context_truncated": false,
+          "started_at": "2026-10-08T03:00:00Z",
+          "finished_at": "2026-10-08T03:01:00Z"
+        }
+      },
+      "HealthResponse": {
+        "summary": "Fixture minh họa, không phải dữ liệu/model đã chạy.",
+        "value": {
+          "status": "ok",
+          "database": "available"
+        }
+      },
+      "ProblemINVALID_INPUT": {
+        "value": {
+          "type": "urn:studycraft:problem:invalid-input",
+          "title": "Invalid input",
+          "status": 422,
+          "detail": "Dữ liệu chưa hợp lệ hoặc yêu cầu đính chính chưa rõ.",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "INVALID_INPUT",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemFORBIDDEN": {
+        "value": {
+          "type": "urn:studycraft:problem:forbidden",
+          "title": "Forbidden",
+          "status": 403,
+          "detail": "Session, CSRF, Origin hoặc quyền truy cập không hợp lệ.",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "FORBIDDEN",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemNOT_FOUND": {
+        "value": {
+          "type": "urn:studycraft:problem:not-found",
+          "title": "Not found",
+          "status": 404,
+          "detail": "Not found",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "NOT_FOUND",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemVERSION_CONFLICT": {
+        "value": {
+          "type": "urn:studycraft:problem:version-conflict",
+          "title": "Version conflict",
+          "status": 409,
+          "detail": "Phiên bản đã thay đổi. Hãy đọc lại bản hiện tại.",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "VERSION_CONFLICT",
+          "retryable": true,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemIDEMPOTENCY_CONFLICT": {
+        "value": {
+          "type": "urn:studycraft:problem:idempotency-conflict",
+          "title": "Idempotency conflict",
+          "status": 409,
+          "detail": "Idempotency conflict",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "IDEMPOTENCY_CONFLICT",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemRUN_BUSY": {
+        "value": {
+          "type": "urn:studycraft:problem:run-busy",
+          "title": "Run busy",
+          "status": 409,
+          "detail": "Run busy",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "RUN_BUSY",
+          "retryable": true,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemLOCAL_MODEL_UNAVAILABLE": {
+        "value": {
+          "type": "urn:studycraft:problem:local-model-unavailable",
+          "title": "Local model unavailable",
+          "status": 503,
+          "detail": "Local model unavailable",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "LOCAL_MODEL_UNAVAILABLE",
+          "retryable": true,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemMODEL_TIMEOUT": {
+        "value": {
+          "type": "urn:studycraft:problem:model-timeout",
+          "title": "Model timeout",
+          "status": 504,
+          "detail": "Model timeout",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "MODEL_TIMEOUT",
+          "retryable": true,
+          "run_id": "00000000-0000-4000-8000-000000000106",
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemINVALID_MODEL_OUTPUT": {
+        "value": {
+          "type": "urn:studycraft:problem:invalid-model-output",
+          "title": "Invalid model output",
+          "status": 502,
+          "detail": "Invalid model output",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "INVALID_MODEL_OUTPUT",
+          "retryable": true,
+          "run_id": "00000000-0000-4000-8000-000000000106",
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemCONTEXT_LIMIT": {
+        "value": {
+          "type": "urn:studycraft:problem:context-limit",
+          "title": "Context limit",
+          "status": 422,
+          "detail": "Context limit",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "CONTEXT_LIMIT",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemRESULT_EXPIRED": {
+        "value": {
+          "type": "urn:studycraft:problem:result-expired",
+          "title": "Result expired",
+          "status": 409,
+          "detail": "Result expired",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "RESULT_EXPIRED",
+          "retryable": false,
+          "run_id": "00000000-0000-4000-8000-000000000107",
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemINTERRUPTED": {
+        "value": {
+          "type": "urn:studycraft:problem:interrupted",
+          "title": "Interrupted",
+          "status": 409,
+          "detail": "Interrupted",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "INTERRUPTED",
+          "retryable": true,
+          "run_id": "00000000-0000-4000-8000-000000000106",
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemDATABASE_UNAVAILABLE": {
+        "value": {
+          "type": "urn:studycraft:problem:database-unavailable",
+          "title": "Database unavailable",
+          "status": 503,
+          "detail": "Chưa xác nhận được kết quả lưu. Hãy gửi lại cùng khóa khi database hoạt động.",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "DATABASE_UNAVAILABLE",
+          "retryable": true,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemMALFORMED_REQUEST": {
+        "value": {
+          "type": "urn:studycraft:problem:malformed-request",
+          "title": "Malformed request",
+          "status": 400,
+          "detail": "Malformed request",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "MALFORMED_REQUEST",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemMETHOD_NOT_ALLOWED": {
+        "value": {
+          "type": "urn:studycraft:problem:method-not-allowed",
+          "title": "Method not allowed",
+          "status": 405,
+          "detail": "Method not allowed",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "METHOD_NOT_ALLOWED",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemPAYLOAD_TOO_LARGE": {
+        "value": {
+          "type": "urn:studycraft:problem:payload-too-large",
+          "title": "Payload too large",
+          "status": 413,
+          "detail": "Payload too large",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "PAYLOAD_TOO_LARGE",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemUNSUPPORTED_MEDIA_TYPE": {
+        "value": {
+          "type": "urn:studycraft:problem:unsupported-media-type",
+          "title": "Unsupported media type",
+          "status": 415,
+          "detail": "Unsupported media type",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "UNSUPPORTED_MEDIA_TYPE",
+          "retryable": false,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      },
+      "ProblemINTERNAL_ERROR": {
+        "value": {
+          "type": "urn:studycraft:problem:internal-error",
+          "title": "Internal error",
+          "status": 500,
+          "detail": "Internal error",
+          "instance": "urn:studycraft:request:00000000-0000-4000-8000-000000000901",
+          "code": "INTERNAL_ERROR",
+          "retryable": true,
+          "run_id": null,
+          "correlation_id": "00000000-0000-4000-8000-000000000901"
+        }
+      }
+    }
+  },
+  "x-sources": [
+    "../requirements/user-stories.md",
+    "../architecture/database-schema.md",
+    "../architecture/system-design.md",
+    "../architecture/adr/006-localhost-security.md",
+    "../SPEC.md"
+  ],
+  "x-reference-standards": [
+    "https://spec.openapis.org/oas/v3.1.1.html",
+    "https://www.rfc-editor.org/rfc/rfc9457.html"
+  ],
+  "x-design-deltas": [
+    "Initial HTTP API version /api/v1; health remains /health. Existing all-POST /api/tools transport is a prior proposal, not supported legacy alias.",
+    "3 read tools move to GET path/query; 9 mutations remain named POST tools.",
+    "Unsafe Idempotency-Key UUIDv4 maps request_id; body request_id rejected. Header normalized to lowercase UUID before scope lookup; body UUIDs canonicalized to lowercase for hashing.",
+    "Problem response replaces transport Error envelope. Internal service adapter may retain legacy Error shape; do not return Error at HTTP boundary.",
+    "Transport 400/405/413/415 reject before claim, no receipt/run. HTTP500 INTERNAL_ERROR durable extension requires DB receipt CHECK500 and service Error enum extension.",
+    "planned_period added from DB proposal: optional day default in input, required in output; UI selecting week must send explicitly.",
+    "Cookie name, maxAge8h, stable signing-secret/HMAC-bound CSRF bootstrap/reuse are explicit proposals; no session table/login accounts."
+  ],
+  "x-processing-order": [
+    "Validate Host, session, same-origin Origin/CSRF before business data/receipt for POST.",
+    "Validate media type, <=256KiB raw body, JSON syntax, input schema and normalize defaults/UUIDs.",
+    "Compute tool+canonical normalized domain-input SHA256; lookup receipt before mutable current-version/target checks. Same key/hash replay even if workspace version advanced since original request. Normalize all UUID values/lowercase, fill planned_period=day, sort JSON object keys/encode UTF8 without whitespace; preserve array order/text, do not normalize strings.",
+    "On new key, perform current-version/reference/authorization checks and claim request under short workspace lock; bound model call outside DB transaction; commit results atomically."
+  ],
+  "x-internal-error-policy": [
+    "Pre-claim INTERNAL_ERROR:500, no receipt/run.",
+    "After claim and before success commit with DB healthy: rollback failed work, then lock workspace/run/request, finalize receipt500 INTERNAL_ERROR and run failed; no raw detail persisted. Same key replays terminal error, no inference.",
+    "If success already committed, never replace receipt/artifact with error. Return transport500 if response cannot be produced; replay same key returns durable success (or expired chat reply).",
+    "If cleanup/commit outcome cannot be confirmed because DB unavailable:503 DATABASE_UNAVAILABLE, may leave in_progress for startup interruption. Never claim success or auto-retry new key; replay same key after recovery."
+  ],
+  "x-error-catalog": {
+    "INVALID_INPUT": {
+      "http_status": 422,
+      "type": "urn:studycraft:problem:invalid-input",
+      "title": "Invalid input",
+      "retryable": false,
+      "recovery": "Sửa dữ liệu; yêu cầu có receipt lỗi đã kết thúc cần UUID mới khi gửi lại ý định đã sửa.",
+      "persistable": true,
+      "receipt_behavior": "Pre-claim reject: no receipt. Valid newly claimed intent failing business validation: finalize sanitized terminal error without artifacts."
+    },
+    "FORBIDDEN": {
+      "http_status": 403,
+      "type": "urn:studycraft:problem:forbidden",
+      "title": "Forbidden",
+      "retryable": false,
+      "recovery": "Kiểm session/CSRF/Origin/quyền workspace; lỗi trước claim không tạo receipt.",
+      "persistable": true,
+      "receipt_behavior": "Pre-claim reject: no receipt. Valid newly claimed intent failing business validation: finalize sanitized terminal error without artifacts."
+    },
+    "NOT_FOUND": {
+      "http_status": 404,
+      "type": "urn:studycraft:problem:not-found",
+      "title": "Not found",
+      "retryable": false,
+      "recovery": "Kiểm ID; run không tồn tại không chứng minh cần UUID retry mới.",
+      "persistable": true,
+      "receipt_behavior": "Pre-claim reject: no receipt. Valid newly claimed intent failing business validation: finalize sanitized terminal error without artifacts."
+    },
+    "VERSION_CONFLICT": {
+      "http_status": 409,
+      "type": "urn:studycraft:problem:version-conflict",
+      "title": "Version conflict",
+      "retryable": true,
+      "recovery": "Đọc bản hiện tại rồi gửi thao tác được xác nhận bằng UUID mới.",
+      "persistable": true
+    },
+    "IDEMPOTENCY_CONFLICT": {
+      "http_status": 409,
+      "type": "urn:studycraft:problem:idempotency-conflict",
+      "title": "Idempotency conflict",
+      "retryable": false,
+      "recovery": "Cùng key khác canonical input/tool; không đổi payload để retry key cũ.",
+      "persistable": false,
+      "receipt_behavior": "Reject mismatching payload/tool; leave original receipt/hash/run/artifact unchanged."
+    },
+    "RUN_BUSY": {
+      "http_status": 409,
+      "type": "urn:studycraft:problem:run-busy",
+      "title": "Run busy",
+      "retryable": true,
+      "recovery": "Key đang chạy: kiểm run/replay cùng key. Key mới bị từ chối: người học chờ và chủ động dùng UUID mới.",
+      "persistable": true,
+      "receipt_behavior": "Same key in_progress: transient response, receipt unchanged. Different/new key rejected by one-running-run gate after claim: terminal receipt409 with no run for that key."
+    },
+    "LOCAL_MODEL_UNAVAILABLE": {
+      "http_status": 503,
+      "type": "urn:studycraft:problem:local-model-unavailable",
+      "title": "Local model unavailable",
+      "retryable": true,
+      "recovery": "Bật runtime rồi retry chủ động bằng UUID mới nếu request trước đã terminal.",
+      "persistable": true
+    },
+    "MODEL_TIMEOUT": {
+      "http_status": 504,
+      "type": "urn:studycraft:problem:model-timeout",
+      "title": "Model timeout",
+      "retryable": true,
+      "recovery": "Kiểm runtime còn inference không; không tự chạy lại. Terminal retry cần UUID mới.",
+      "persistable": true
+    },
+    "INVALID_MODEL_OUTPUT": {
+      "http_status": 502,
+      "type": "urn:studycraft:problem:invalid-model-output",
+      "title": "Invalid model output",
+      "retryable": true,
+      "recovery": "Không lưu output lỗi; người học có thể yêu cầu lượt mới bằng UUID mới.",
+      "persistable": true
+    },
+    "CONTEXT_LIMIT": {
+      "http_status": 422,
+      "type": "urn:studycraft:problem:context-limit",
+      "title": "Context limit",
+      "retryable": false,
+      "recovery": "Giảm context hoặc chọn kỳ ngày; không âm thầm cắt nguồn.",
+      "persistable": true,
+      "receipt_behavior": "Pre-claim reject: no receipt. Valid newly claimed intent failing business validation: finalize sanitized terminal error without artifacts."
+    },
+    "RESULT_EXPIRED": {
+      "http_status": 409,
+      "type": "urn:studycraft:problem:result-expired",
+      "title": "Result expired",
+      "retryable": false,
+      "recovery": "Reply chat tạm hết hạn; không tạo reports lại. Chỉ gửi câu hỏi mới khi người học yêu cầu.",
+      "persistable": false,
+      "receipt_behavior": "Computed on chat replay after RAM expiry; leave completed-success receipt and reports/run unchanged."
+    },
+    "INTERRUPTED": {
+      "http_status": 409,
+      "type": "urn:studycraft:problem:interrupted",
+      "title": "Interrupted",
+      "retryable": true,
+      "recovery": "Giữ artifacts đã commit; người học retry chủ động bằng UUID mới.",
+      "persistable": true
+    },
+    "DATABASE_UNAVAILABLE": {
+      "http_status": 503,
+      "type": "urn:studycraft:problem:database-unavailable",
+      "title": "Database unavailable",
+      "retryable": true,
+      "recovery": "Khi DB khỏe, replay đúng key trước vì kết quả commit có thể chưa rõ.",
+      "persistable": true
+    },
+    "MALFORMED_REQUEST": {
+      "http_status": 400,
+      "type": "urn:studycraft:problem:malformed-request",
+      "title": "Malformed request",
+      "retryable": false,
+      "recovery": "Request không parse được; từ chối trước claim.",
+      "persistable": false
+    },
+    "METHOD_NOT_ALLOWED": {
+      "http_status": 405,
+      "type": "urn:studycraft:problem:method-not-allowed",
+      "title": "Method not allowed",
+      "retryable": false,
+      "recovery": "Dùng method được khai báo; từ chối trước claim.",
+      "persistable": false
+    },
+    "PAYLOAD_TOO_LARGE": {
+      "http_status": 413,
+      "type": "urn:studycraft:problem:payload-too-large",
+      "title": "Payload too large",
+      "retryable": false,
+      "recovery": "Body trên 256 KiB; từ chối trước claim.",
+      "persistable": false
+    },
+    "UNSUPPORTED_MEDIA_TYPE": {
+      "http_status": 415,
+      "type": "urn:studycraft:problem:unsupported-media-type",
+      "title": "Unsupported media type",
+      "retryable": false,
+      "recovery": "POST phải application/json; từ chối trước claim.",
+      "persistable": false
+    },
+    "INTERNAL_ERROR": {
+      "http_status": 500,
+      "type": "urn:studycraft:problem:internal-error",
+      "title": "Internal error",
+      "retryable": true,
+      "recovery": "Nếu đã claim và chưa commit, kết thúc run/receipt khi DB khỏe. Replay cùng key trước nếu kết quả commit chưa rõ.",
+      "persistable": true
+    }
+  },
+  "x-invariants": {
+    "same_origin": "POST requires exact configured Origin and Host allowlist before claim; GET reads require signed cookie, no CORS wildcard.",
+    "context": "max40000UTF8bytes, max3000outputTokens, at most2attempts within120seconds; response budget125s/browser130s are proposals from system design.",
+    "immutable": "No model edit to profile/goals/activity/submission. Rewrites insert new submission. Journal revisions append-only.",
+    "privacy": "No transcripts/recent_messages/source_quote/raw prompt/provider error text in DB/log/history/long-term HTTP cache. Learned reports and explicit correction instruction are permitted compact artifacts.",
+    "pagination": "before_id absent means first page, default limit20/max50, descending ID, next_before_id|null. Collections in workspace are bounded snapshots, not full history pagination.",
+    "success_replay": "Non-chat replay returns exact original success/status snapshot; ordinary reads recompute journal stale status. Chat reply livesRAM<=10minutes; expires/restart returns409RESULT_EXPIRED with original run_id, does not overwrite success receipt."
+  }
+}
