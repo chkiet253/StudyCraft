@@ -1,8 +1,8 @@
 # User stories MVP — StudyCraft
 
-**Bản nháp — 2026-10-07.** Nguồn chính: [PRD](prd.md). [SPEC v2](../SPEC.md) bổ sung giới hạn và quy tắc kỹ thuật đang là giả định. Đây là yêu cầu nghiệm thu, không phải kết quả đã chạy.
+**Bản nháp — 2026-10-08.** Nguồn chính: [PRD](prd.md). [SPEC v3](../SPEC.md) bổ sung giới hạn và quy tắc kỹ thuật đang là giả định. Đây là yêu cầu nghiệm thu, không phải kết quả đã chạy.
 
-Nội dung dùng PRD hiện tại: chủ dự án dùng đầu tiên, làm solo; TOEIC/IELTS là mục tiêu từng hồ sơ. Mẫu giới thiệu nhóm hai người trong yêu cầu chưa được coi là thay đổi PRD.
+Nội dung dùng PRD hiện tại: chủ dự án dùng đầu tiên; nhóm phát triển hai người xuất phát từ Data & AI, được xác nhận ngày 2026-10-08. TOEIC/IELTS là mục tiêu từng hồ sơ; thêm developer không biến sản phẩm thành ứng dụng nhiều người dùng.
 
 **Quy ước:** epic là nhóm nghiệp vụ. Must = bắt buộc; Should = nên làm sau vòng sửa bài cốt lõi; Could = có thể làm nếu còn nguồn lực. Ưu tiên là đề xuất, không tự loại một tính năng đã nằm trong MVP. Given/When/Then tương ứng Cho trước/Khi/Thì. Phụ thuộc là story cần có để thực hiện luồng, không phải thứ tự viết tất cả mã nguồn.
 
@@ -12,7 +12,7 @@ Nội dung dùng PRD hiện tại: chủ dự án dùng đầu tiên, làm solo;
 - **G1:** sửa bài độc lập, 0 lượt chat bắt buộc — Goals, mục Sửa bài độc lập.
 - **G2:** giữ hồ sơ, đọc lại khi khởi động lại hoặc model tắt — Goals, mục Giữ hồ sơ.
 - **G3:** kiểm soát thay đổi, bảo vệ bài gốc và mục tiêu — Goals, mục Kiểm soát thay đổi.
-- **G4:** nhật ký không form, có đính chính, không transcript lâu dài — Goals, mục Nhật ký ít thao tác.
+- **G4:** nhật ký không form, đính chính/vĩnh viễn, chat mở lại được — Goals, mục Nhật ký ít thao tác.
 
 ## Epic E01 — Hồ sơ, tài liệu và việc học
 
@@ -72,7 +72,7 @@ Nội dung dùng PRD hiện tại: chủ dự án dùng đầu tiên, làm solo;
 
 - Given đề và bài hợp lệ; When tôi nộp bài; Then bài gốc cùng đề được lưu trước khi gọi model, không cần gửi qua chat.
 - Given bài chỉ gồm khoảng trắng; When tôi nộp; Then hệ thống báo lỗi đầu vào và không gọi model.
-- Given cấu hình đang dùng giả định tối đa 300 từ; When tôi nộp 301 từ; Then hệ thống báo vượt giới hạn, không tự cắt bài. Ngưỡng 300 từ chưa phải quyết định đã chốt.
+- Given đề có policy min/max của loại bài; When nộp bài trong hoặc ngoài biên; Then chấp nhận đúng biên, báo lỗi ngoài biên và không tự cắt bài. Đổi policy sau tạo đề không đổi điều kiện của đề cũ. Ngưỡng sản phẩm TODO(project owner); test dùng fixture riêng.
 
 ### US-007 — Xem kết quả sửa riêng với chat
 
@@ -182,15 +182,15 @@ Nội dung dùng PRD hiện tại: chủ dự án dùng đầu tiên, làm solo;
 
 ## Epic E06 — Quyền riêng tư và quyền quyết định
 
-### US-017 — Giữ ghi chú học, không lưu toàn bộ chat
+### US-017 — Mở lại lịch sử chat đã lưu
 
-**Câu chuyện:** Là người học, tôi muốn hệ thống chỉ giữ thông tin học cần thiết, để chat không trở thành hồ sơ hội thoại lưu vĩnh viễn.
+**Câu chuyện:** Là người học, tôi muốn mở lại các hội thoại đã lưu, để tiếp tục việc học sau khi đóng ứng dụng.
 
-**Ưu tiên:** Must. **Phụ thuộc:** US-012, US-013. **Nguồn:** G4; Non-goals và Risks.
+**Ưu tiên:** Must. **Phụ thuộc:** US-012. **Nguồn:** G2/G4; quyết định lưu chat ngày 2026-10-08.
 
-- Given một đoạn hội thoại có chuỗi đánh dấu riêng không thuộc khai báo học hoặc đính chính; When kiểm tra database, nhật ký, lịch sử và log lâu dài; Then không có bản sao nguyên văn đoạn hội thoại hoặc chuỗi đó.
-- Given khai báo học hoặc yêu cầu đính chính rõ ràng; When lưu dữ liệu cần thiết; Then chỉ giữ ghi chú học/đính chính có chủ đích, không lưu toàn bộ tin nhắn để thay thế ghi chú.
-- Given đang dùng giả định chat tạm mất khi tải lại; When người dùng dùng Chat; Then giao diện giải thích tính tạm thời; sau tải lại, bài/tài liệu/ghi chú đã lưu còn dù hội thoại có thể mất.
+- Given hội thoại có tin đã commit; When đóng/mở ứng dụng hoặc model tắt; Then chọn lại hội thoại và đọc đúng thứ tự tin bằng phân trang, không gọi model.
+- Given chat chứa marker riêng; When kiểm tra storage; Then raw message/reply chỉ ở bảng chat, không ở logs/receipt/run snapshots; nhật ký dùng ghi chú ngắn và không sao chép toàn hội thoại.
+- Given context chỉ chọn vài tin gần nhất; When gửi tiếp hoặc replay cùng key sau restart; Then tin cũ vẫn ở DB, không nhân đôi message/report; lượt bị ngắt giữ tin đã commit và báo interrupted.
 
 ### US-018 — Không cho nội dung model tự thay đổi hồ sơ
 
@@ -205,7 +205,7 @@ Nội dung dùng PRD hiện tại: chủ dự án dùng đầu tiên, làm solo;
 ## Kiểm tra truy vết và giới hạn
 
 - **18/18 story có nguồn PRD:** mỗi story chỉ rõ G0–G4 cùng mục phạm vi hoặc rủi ro. Không có story không truy vết được tới mục tiêu PRD.
-- Các tiêu chí bổ sung như trích đoạn hợp lệ, xử lý ngày mơ hồ, phiên bản cũ và gọi lại cùng nguồn dùng SPEC v2 để làm rõ cách kiểm tra; không bổ sung tính năng ngoài PRD.
-- Giới hạn 300 từ, thời điểm tổng hợp và chat tạm là giả định đã được người dùng để chốt sau. Các tiêu chí có điều kiện chỉ áp dụng khi cấu hình đó được chọn, không biến giả định thành quyết định.
+- Các tiêu chí bổ sung như trích đoạn hợp lệ, xử lý ngày mơ hồ, phiên bản cũ và gọi lại cùng nguồn dùng SPEC v3 để làm rõ cách kiểm tra; không bổ sung tính năng ngoài PRD.
+- Đã chốt: giới hạn từ theo loại bài, chat lưu ngay MVP, nhật ký/revisions vĩnh viễn. Ngưỡng từng loại TODO(project owner); trigger tổng hợp vẫn là giả định, context/timeout do developer thử và điều chỉnh.
 - Ưu tiên và phụ thuộc phục vụ chia việc; nghe/nói/đọc, chấm điểm thi, fine-tuning, API cloud, upload, nhắc lịch và đánh giá giá trị sau dùng thử không được đưa thành story MVP ở đây.
 - Kiểm tra luồng với model giả lập tách khỏi thử model thật. Người rà soát tiếng Anh và model cụ thể vẫn chưa chốt; đáp ứng tiêu chí lưu dữ liệu không chứng minh chất lượng ngôn ngữ.

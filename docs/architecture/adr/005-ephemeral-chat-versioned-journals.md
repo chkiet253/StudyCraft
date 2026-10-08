@@ -1,32 +1,35 @@
-# ADR 005 — Chat tạm, nhật ký có nguồn và phiên bản
+# ADR 005 — Lưu lịch sử chat và nhật ký có phiên bản
 
 ## Status
 
-Proposed — 2026-10-07. Không transcript lâu dài/không form nhật ký là yêu cầu đã chốt trong [PRD](../../requirements/prd.md); các con số và trigger là giả định.
+Proposed — cập nhật 2026-10-08. Người dùng đã chốt lưu chat trong MVP và nhật ký vĩnh viễn; cơ chế kỹ thuật dưới đây còn là thiết kế, chưa triển khai. Thay thế đề xuất chat chỉ ở RAM ngày 2026-10-07. Giữ tên file cũ để không làm hỏng liên kết.
 
 ## Context
 
-Người học khai báo việc đã học qua chat; nhật ký tổng hợp lời khai và hoạt động ứng dụng. Summary có thể sai nên cần đính chính, nhưng không được giả tạo events hoặc làm mất bản trước.
+Người học cần mở lại hội thoại sau khi đóng ứng dụng. Nhật ký là tóm tắt khai báo và hoạt động, không phải bản sao hội thoại. Máy cá nhân chạy local model có context hữu hạn.
 
 ## Decision
 
-Raw chat/reply chỉ RAM: tối đa 8 messages/tab, cache server tối đa 10 phút theo giả định SPEC. Database giữ report ngắn đã kiểm, yêu cầu đính chính có chủ đích và metadata; không transcript/source_quote/prompt snapshots. Metadata logs giữ tối đa 30 ngày.
+PostgreSQL lưu chat_threads/chat_messages; tin người dùng commit trước inference, assistant reply và reports commit cùng receipt sau validation. Replay dựng lại từ IDs trong DB; không có TTL reply. Cùng key không gọi lại model hoặc tạo bản ghi trùng. Lượt lỗi/bị ngắt giữ user message và trạng thái, không tạo assistant giả.
 
-Nhật ký tổng hợp khi xem kỳ có nguồn đổi; không scheduler. Counts tính từ events bằng code. Source signature và IDs xác định nguồn; cùng nguồn trả bản cũ; nguồn trống/chỉ events không inference. Corrections và revision mới lưu cùng transaction, expected_revision kiểm lại lúc commit. Đính chính ngày được đưa vào tuần liên quan; đính chính tuần không bị chia giả cho ngày.
+Backend lấy cửa sổ lượt thành công gần nhất theo budget; giảm context không xóa lịch sử. Đề xuất ban đầu tối đa 8 tin cũ, developer điều chỉnh qua thử nghiệm. Logs/receipts/run snapshots không chứa raw chat hoặc prompt.
+
+Nhật ký/revisions lưu vĩnh viễn, không job dọn tự động. Giữ trigger đề xuất mở kỳ có nguồn đổi mới tổng hợp; counts từ events, corrections append phiên bản, source signature chống inference trùng. Nhật ký chỉ dùng reports/events/corrections, không dùng toàn transcript.
 
 ## Alternatives considered (with trade-offs)
 
-- Lưu toàn bộ chat: dễ xem lại câu chữ; trái yêu cầu không transcript và tăng dữ liệu dư.
-- Form nhật ký: dữ liệu có cấu trúc rõ; tăng thao tác và trái luồng khai báo chat đã chọn.
-- Cron tự tổng hợp: nhật ký sẵn theo lịch; thêm scheduler/background recovery chưa cần.
-- Ghi đè một summary: schema nhỏ hơn; mất lịch sử đính chính và khó biết AI đã thay gì.
+- Chat chỉ RAM: ít storage nhưng mất hội thoại, không đáp ứng quyết định mới.
+- Gửi toàn lịch sử cho model: đơn giản bước chọn context nhưng nhanh vượt tài nguyên máy cá nhân.
+- Ghi đè summary: ít bảng nhưng mất lịch sử đính chính.
+- Scheduler hoặc vector search: thêm vận hành, chưa cần cho MVP.
 
 ## Consequences (positive/negative)
 
-- **Positive:** ít dữ liệu hội thoại dư; nhật ký có nguồn/phiên bản, đính chính không thay events; tránh inference trùng.
-- **Negative:** không khôi phục được hội thoại đầy đủ, cache hết hạn không replay reply được. Report có thể mất ý; source/revision logic phức tạp hơn một summary đơn. Nguồn lớn có thể vượt context và phải xem theo ngày.
+- **Positive:** đọc/replay chat sau restart không cần model; giữ journal revisions và nguồn đính chính.
+- **Negative:** thêm bảng, phân trang, migration và backup; model không nhớ mọi tin đã lưu. Phải test transaction/recovery, tránh ghi user message trùng.
+- OpenAPI/DDL/ER còn thiết kế cũ: đồng bộ theo [SPEC §6/§9/§13](../../SPEC.md) trước I-05, chưa coi contract cũ là sẵn sàng triển khai.
 
 ## Revisit trigger
 
-Người dùng thay yêu cầu retention/chat, cần lịch tổng hợp tự động hoặc thường vượt giới hạn nguồn/context. Mọi thay đổi phải xét dữ liệu thật và nguồn đính chính; không bật transcript ngầm.
+Cần xóa/export/tìm kiếm hội thoại, nhiều người dùng, chạy nhiều worker, hoặc các lần thử chứng minh cửa sổ context không đủ. Không mở rộng scope chỉ vì dự đoán tải tương lai.
 

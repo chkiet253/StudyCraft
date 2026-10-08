@@ -1,6 +1,6 @@
 # Định nghĩa sản phẩm StudyCraft
 
-Cập nhật ngày 2026-10-06 theo quyết định của người dùng: ưu tiên sửa bài đã hoàn thành, chat hỏi đáp riêng, model local và nhật ký tóm tắt.
+Cập nhật ngày 2026-10-08 theo quyết định của người dùng: ưu tiên sửa bài đã hoàn thành, chat hỏi đáp riêng, model local và nhật ký tóm tắt.
 
 ## Ý tưởng đã chốt
 
@@ -30,7 +30,7 @@ Pilot cá nhân sẽ ghi nhận thủ công: người học có tìm lại đún
 | Khai báo và xem nhật ký | Kể việc đã học trong chat; xem tóm tắt ngày/tuần. | Tổng hợp khai báo và hoạt động ghi nhận; phân biệt tự khai báo với hành động ứng dụng quan sát được. |
 | Đính chính | Yêu cầu sửa nội dung nhật ký qua chat gắn với bản tóm tắt đang xem. | Lưu bản tóm tắt sửa và giữ bản trước; không bắt nhập lại qua form. |
 
-Thông tin cần quản lý: môn học, hồ sơ học tập, mục tiêu, tài liệu, phương pháp, hoạt động, đề, bài nộp, kết quả sửa và các phiên bản nhật ký tóm tắt. Chat phục vụ tương tác tạm thời; không lưu lâu dài nguyên văn toàn bộ hội thoại. Bài nộp, kết quả sửa và tài liệu vẫn được lưu vì là hồ sơ học tập, không phải transcript chat.
+Thông tin cần quản lý: môn học, hồ sơ học tập, mục tiêu, tài liệu, phương pháp, hoạt động, đề, bài nộp, kết quả sửa và các phiên bản nhật ký tóm tắt. Lịch sử chat được lưu trong PostgreSQL ngay trong MVP, mở lại được sau khi đóng/mở ứng dụng. Bài nộp, kết quả sửa và tài liệu vẫn được lưu vì là hồ sơ học tập, không phải transcript chat.
 
 ## Vòng hoạt động chính
 
@@ -61,7 +61,7 @@ Tên tài liệu được lưu để nhận diện ngữ cảnh. Hệ thống ch
 | Người học đính chính nhật ký | Đính chính qua chat theo bản đang xem; lưu phiên bản mới và giữ lịch sử tóm tắt. |
 | Hoàn thành, hoãn hoặc đổi mục tiêu/kế hoạch | Chỉ cập nhật bằng lựa chọn trực tiếp của người học trong MVP; không có AI tự áp dụng. |
 
-Chi tiết về thời điểm tổng hợp và lưu chat tạm là giả định triển khai trong `docs/SPEC.md`, không phải yêu cầu lưu tất cả dữ liệu tương tác.
+Nhật ký và các phiên bản được lưu vĩnh viễn, không tự hết hạn. Lịch sử chat lưu riêng; model chỉ nhận một phần lịch sử theo cấu hình để chạy được trên máy cá nhân. Thời điểm tổng hợp khi xem kỳ vẫn là giả định triển khai trong `docs/SPEC.md`.
 
 ## Các tính năng đã hợp nhất
 
@@ -104,7 +104,7 @@ Người học xác nhận ý định của bài và ghi nhận sửa đổi b�
 - Agent hội thoại dài để hướng dẫn từng bước trong lúc sửa bài.
 - Gợi ý ý tưởng hay hơn, bài tiếp theo hoặc mở rộng nội dung sau mỗi lần sửa.
 - Upload PDF/ảnh/audio, OCR, kho ebook hay lưu trữ file tổng quát.
-- Lưu lâu dài toàn bộ transcript chat hoặc form tạo nhật ký thủ công.
+- Form tạo nhật ký thủ công; tìm kiếm/đổi tên/xóa/phân nhánh chat để sau.
 - Nhà cung cấp Claude/cloud, API tính phí, bảng giá và cơ chế budget theo tiền.
 - Benchmark chất lượng định lượng, dashboard kỹ năng hoặc kết luận thành thạo.
 - Nhắc theo lịch, tự quản lý thời gian, nhiều môn/phương pháp, nhiều agent, SaaS hoặc tích hợp ngoài.
@@ -114,7 +114,7 @@ Người học xác nhận ý định của bài và ghi nhận sửa đổi b�
 1. Model local có thể sửa sai hoặc đổi ý; cần ví dụ đối chiếu và cách nhận biết sửa đổi bị bác bỏ.
 2. Chưa biết cấu hình máy/model phù hợp; phải đo trên máy thực tế, không cam kết tốc độ hoặc chất lượng trước.
 3. Tóm tắt có thể bỏ sót hoặc diễn giải quá mức; cần nhãn nguồn, đính chính và giữ phiên bản tóm tắt trước.
-4. Không lưu toàn bộ chat đồng nghĩa không khôi phục được hội thoại đầy đủ; UI phải giải thích rõ, còn dữ liệu học cần thiết được lưu riêng.
+4. Lưu lịch sử chat làm tăng dữ liệu cần backup. Lịch sử không đồng nghĩa model đọc toàn bộ tin; UI phải giải thích giới hạn ngữ cảnh.
 5. Công sức khai báo phải được quan sát trong pilot; thêm bước duyệt/form không cần thiết có thể cản trở sử dụng.
 
 ## Định hướng kỹ thuật sau nghiệp vụ
@@ -122,7 +122,8 @@ Người học xác nhận ý định của bài và ghi nhận sửa đổi b�
 - Python 3.12, FastAPI và PostgreSQL; web có các khu vực riêng cho tài liệu, luyện viết/kết quả, chat và nhật ký.
 - Model local là lựa chọn MVP; Claude chỉ là hướng mở rộng sau này. Tên model, runtime và cấu hình máy chưa được người dùng chốt.
 - Cùng một local model có thể xử lý các tác vụ độc lập: sửa bài, trả lời câu hỏi và tóm tắt. Không cần nhiều agent hoặc tác vụ tự tiếp tục.
-- Giữ bài/tài liệu/kết quả và các bản tóm tắt; không thiết kế bộ nhớ transcript vĩnh viễn.
+- Giữ bài/tài liệu/kết quả, nhật ký và lịch sử chat. Không ghi raw chat/prompt vào log kỹ thuật; chỉ gửi context hữu hạn cho model.
+- Giới hạn từ theo loại bài; ngưỡng cụ thể TODO(project owner), không áp trần chung 300 từ.
 - Không cần MCP, vector search, framework agent hoặc tích hợp ngoài cho vòng sử dụng này.
 
-**Trạng thái:** nghiệp vụ được cập nhật theo quyết định ngày 2026-10-06. Đặc tả triển khai tương ứng là `docs/SPEC.md` v2; các giả định về runtime, giới hạn dữ liệu và pilot vẫn cần kiểm chứng khi triển khai.
+**Trạng thái:** nghiệp vụ được cập nhật theo quyết định ngày 2026-10-08. Đặc tả triển khai tương ứng là `docs/SPEC.md` v3; các giả định về runtime, giới hạn dữ liệu và pilot vẫn cần kiểm chứng khi triển khai.
