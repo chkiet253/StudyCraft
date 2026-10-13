@@ -32,6 +32,7 @@
 ## Task playbooks
 
 - Requirements, business analysis, design, or implementation plans: [planning](.agents/skills/planning/SKILL.md).
+- Creating, implementing, or refactoring application code: [coding-conventions](.agents/skills/coding-conventions/SKILL.md).
 - Bugs, failing tests, build failures, or unexpected behavior: [systematic-debugging](.agents/skills/systematic-debugging/SKILL.md).
 - Reviews of changes or scoped code audits: [code-review](.agents/skills/code-review/SKILL.md).
 - Behavior changes, regression tests, or verification work: [testing](.agents/skills/testing/SKILL.md).
