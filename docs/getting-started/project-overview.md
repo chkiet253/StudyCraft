@@ -1,6 +1,6 @@
 # StudyCraft — Tổng quan dự án
 
-**Cập nhật: 2026-10-08.** Dành cho người mới tham gia; nguồn là PRD và ghi chú stack. Repo hiện ở giai đoạn đặc tả, chưa chứng minh ứng dụng đã chạy.
+**Cập nhật: 2026-10-13.** Dành cho người mới tham gia; nguồn là PRD và ghi chú stack. Repo hiện ở giai đoạn đặc tả, chưa chứng minh ứng dụng đã chạy.
 
 ## Mục tiêu và phạm vi
 
@@ -17,7 +17,7 @@ Luồng chính: **chọn đề → làm/nộp bài → lưu bài gốc → xem s
 Các lý do là định hướng thiết kế, chưa phải kết quả chạy thử:
 
 - **Python 3.12:** giảm số ngôn ngữ cần duy trì cho nghiệp vụ và tích hợp model.
-- **FastAPI:** gom các thao tác web và xử lý yêu cầu model trong một backend.
+- **FastAPI:** backend modular monolith tại `apps/api/`; giao diện nằm tại `apps/web/` và dùng API cùng origin.
 - **PostgreSQL:** giữ hồ sơ, bài, phản hồi và các phiên bản nhật ký có quan hệ với nhau.
 - **Jinja + HTML/CSS/JavaScript — đề xuất:** giao diện đơn giản, hạn chế thêm hệ thống build frontend trong MVP.
 - **Qwen khoảng 4B/7B — ứng viên:** phục vụ hướng thử model local trên máy chủ dự án; phiên bản/cấu hình chưa chốt.
@@ -37,7 +37,7 @@ Fine-tuning (huấn luyện bổ sung), API LLM và Claude được xử lý ri�
 
 Xem [cách đọc docs/](../README.md) để đi theo thứ tự nhập môn, tìm tài liệu theo câu hỏi và biết A/B cần đọc gì trước mỗi sprint.
 
-Root chứa README, AGENTS và hướng dẫn tại `.agents/skills/`. `docs/requirements/` giữ yêu cầu; `docs/manual_project/` giữ quy ước dự án; `docs/getting-started/` giữ tài liệu nhập môn. Cấu trúc mã nguồn dự kiến nằm trong SPEC.
+Root chứa README, AGENTS và hướng dẫn tại `.agents/skills/`. Cấu trúc mục tiêu: `.github/`, `apps/{api,web,worker,ai-service}/`, `packages/api-client/`, `evals/`, `pipelines/`, `infra/`, `tests/e2e/`, `scripts/` và `docs/`. Backend tests/migrations thuộc `apps/api/`; UI thuộc `apps/web/`. `docs/requirements/` giữ yêu cầu; `docs/manual_project/` giữ quy ước; `docs/getting-started/` giữ tài liệu nhập môn; runbooks/operations/security/ai có vị trí riêng. Cây đầy đủ ở SPEC §12; các thư mục ứng dụng vẫn là dự kiến.
 
 - [README](../../README.md): giới thiệu repo.
 - [AGENTS](../../AGENTS.md): hướng dẫn coding agent.

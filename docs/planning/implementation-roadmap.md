@@ -1,8 +1,12 @@
 # StudyCraft — Lộ trình task và research theo sprint
 
-**Cập nhật: 2026-10-08 · Trạng thái: kế hoạch đề xuất cho nhóm hai người.** Chưa có task triển khai hoặc research nào trong bảng dưới được xác nhận hoàn thành. Tài liệu này là kế hoạch phân công, không phải yêu cầu thực thi mã, tải model, commit hoặc push ngay.
+**Cập nhật: 2026-10-13 · Trạng thái: kế hoạch đề xuất cho nhóm hai người.** Quyết định mới: **Sprint 0 chỉ nghiên cứu, tài liệu và chuẩn bị; không coding ứng dụng.** Code T001 và script/tests R03 vừa thử đã gỡ. Kết quả khảo sát R03 và ghi chú chuẩn bị T001 giữ tại [research notes](research-notes.md); T001 chưa hoàn thành DoD triển khai ban đầu. Đây không phải yêu cầu tải model, commit hoặc push.
+
+**TODO(A/B):** sắp xếp T001–T006 vào sprint coding sau Sprint 0, cập nhật lịch/estimate và ClickUp khi lên kế hoạch. Dependencies và IDs được giữ để không mất backlog; bảng effort và các mốc Sprint 1–7 bên dưới vẫn là baseline cũ, chưa phải lịch đã điều chỉnh.
 
 Nguồn: [PRD](../requirements/prd.md), [18 user stories](../requirements/user-stories.md), [SPEC v3](../SPEC.md), [system design](../architecture/system-design.md), [schema](../architecture/database-schema.md), [OpenAPI](../api/openapi.json), [ADRs](../architecture/adr/001-modular-monolith.md), [Git workflow](../guides/git-workflow.md). Khi có mâu thuẫn, quyết định mới của chủ dự án và SPEC v3 ưu tiên; roadmap không tự mở rộng MVP.
+
+Quy ước path theo SPEC §12: API = `apps/api/src/`, Web = `apps/web/`, API tests = `apps/api/tests/`; migrations ở `apps/api/migrations/`, e2e ở `tests/e2e/`, Compose ở `infra/docker/compose.yaml`. Các thư mục vẫn chỉ tạo trong sprint coding cần chúng.
 
 ## 1. Kết quả cần bàn giao
 
@@ -19,10 +23,10 @@ Stack giữ Python 3.12/FastAPI/PostgreSQL, local model. Jinja/HTML/CSS/JS và L
 | Nội dung | Hiện trạng đã kiểm tra | Người xử lý / thời điểm |
 | --- | --- | --- |
 | Nhóm | Hai người cùng nền tảng Data & AI; A là chủ dự án/AI Engineer. Kỹ năng web/SQL và quỹ giờ chưa được đo. | TODO(A/B): giờ/tuần trước cam kết Sprint 0; R01/R04/R06 kiểm tra bằng bài tập. |
-| Code | Repo hiện là tài liệu; chưa có ứng dụng/test suite để chứng minh chạy được. | T001–T006 tạo walking skeleton — khung tối thiểu chạy xuyên app/DB/web/test. |
+| Code | Repo chỉ giữ tài liệu; code/tests vừa thử đã gỡ theo quyết định Sprint 0 không coding. | T001–T006 tạo nền tảng chạy được ở sprint coding sau; TODO(A/B): lịch thực hiện. |
 | Contracts | OpenAPI/DDL còn banner pending SPEC v3, chưa có đầy đủ chat bền vững/policy theo loại bài. | A: R02/T000 trước các task phụ thuộc contract. |
 | Giới hạn bài | Đã chốt theo loại bài, chưa có ngưỡng thật. | TODO(A): R05 trước thử nộp bài thật; fixture giúp code/test không bị chặn. |
-| Model/máy | Qwen khoảng 4B/7B là ứng viên; chưa chốt model card, phiên bản, quantization — mức nén trọng số — hoặc tài nguyên. | A: R03; phải có runtime/model sẵn trước T308/T703. Không tự chuyển API. |
+| Model/máy | R03 đã ghi phần cứng và endpoint mặc định không kết nối được; chưa chạy inference, chưa chọn Qwen/model/version/quantization. | A: xử lý TODO trong [research notes](research-notes.md) trước task cần model thật. Không tự chuyển API. |
 | Trigger nhật ký | Mở kỳ có nguồn đổi mới tổng hợp; timezone Asia/Ho_Chi_Minh, tuần thứ Hai–Chủ nhật vẫn là giả định triển khai của SPEC. | A rà R02; giữ giả định có nhãn, thay đổi phải cập nhật contract/tests. |
 | Chất lượng tiếng Anh | Người rà soát chưa chỉ định; tests cơ chế không chứng minh sửa đúng ngữ nghĩa. | TODO(A): trước tuyên bố chất lượng/dùng kết quả để quyết định học tập; không bịa tỷ lệ đúng. |
 | Lịch và deadline | Chưa có ngày bắt đầu, giờ làm việc thực hoặc hạn bàn giao. | TODO(A/B): chốt capacity; chưa gán ngày lịch hoặc xem dự báo là cam kết. |
@@ -38,7 +42,7 @@ Không có câu hỏi nào chặn việc lập roadmap. Task cần số nghiệp
 
 - Mỗi task có **một owner**. A review backend/contract/migration của B; B review luồng sử dụng và chạy lại tests của A. AI hỗ trợ không thay trách nhiệm giải thích/kiểm chứng của author.
 - Task đầu B làm cùng A theo mẫu; task sau B tự làm rồi review. Frontend không được coi là tự nhiên dễ hơn; R06 dành riêng cho kỹ năng này.
-- A điều phối file chung như `db/models.py`, migration sequence, contracts, router/config. B đề xuất patch trong task riêng; thống nhất file trước khi hai người cùng sửa. Không gom mọi module vào một PR.
+- A điều phối file chung như `apps/api/src/shared/db/models.py`, migration sequence, contracts, router/config. B đề xuất patch trong task riêng; thống nhất file trước khi hai người cùng sửa. Không gom mọi module vào một PR.
 - Nếu kẹt khoảng 30 phút: gửi steps, lỗi, đã thử gì, giả thuyết; A hỗ trợ một phiên ngắn, rồi B tiếp tục. Nếu task vượt 8 giờ còn lại, tách trước khi nhận thêm task.
 - WIP — số việc đang làm — tối đa một task chính/người. Thời gian review/mentoring nằm trong capacity dự phòng; không giả định miễn phí.
 - CI, hooks, Ruff/pre-commit hoặc public staging không được tự tạo lại. Kiểm local thủ công khi coding; bổ sung automation chỉ khi chủ dự án yêu cầu. Staging hiện là app local + DB kiểm tra riêng, không public deploy.
@@ -53,7 +57,7 @@ Ví dụ nếu mỗi người dành 20 giờ/tuần: mỗi sprint có 40 giờ/n
 
 | Sprint | Mốc demo | SPEC increment | A (giờ) | B (giờ) | Tổng |
 | --- | --- | --- | --- | --- | --- |
-| 0 | Khung chạy được và hợp đồng thống nhất | I-01 | 28 | 18 | 46 |
+| 0 | Research, tài liệu và chuẩn bị | I-01 triển khai hoãn | TODO(A) | TODO(B) | TODO(A/B) |
 | 1 | Hồ sơ, tài liệu và hoạt động học | I-02 | 18 | 24 | 42 |
 | 2 | Nộp bài, policy và tìm lại lịch sử | I-03 | 18 | 24 | 42 |
 | 3 | Sửa lỗi bằng fake rồi model local | I-04 | 28 | 20 | 48 |
@@ -62,7 +66,7 @@ Ví dụ nếu mỗi người dành 20 giờ/tuần: mỗi sprint có 40 giờ/n
 | 6 | Đính chính nhật ký và bảo vệ quyền người học | I-06 phần đính chính | 20 | 22 | 42 |
 | 7 | Kiểm chứng toàn MVP và bàn giao local | I-07 | 20 | 22 | 42 |
 
-**Baseline:** 70 task, 12 task research/thử nghiệm, 348 giờ owner (A 174, B 174), chưa tính 25% capacity dự phòng. Nếu quy đổi effort thuần: 348/0,75 ≈ 464 giờ quỹ làm việc; con số này không tự suy ra ngày hoàn thành vì dependencies/mentoring có thể kéo dài. Tám chu kỳ hai tuần là khung tham khảo 16 tuần khi capacity/đầu vào phù hợp, không deadline đã chốt.
+**Baseline trước quyết định Sprint 0 chỉ giữ tài liệu:** 70 task, 12 task research/thử nghiệm, 348 giờ owner (A 174, B 174), chưa tính 25% capacity dự phòng. Nếu quy đổi effort thuần: 348/0,75 ≈ 464 giờ quỹ làm việc. Các số này giữ làm tham chiếu lịch sử, không còn là tổng effort của phân bổ sprint hiện hành; TODO(A/B): ước lượng lại sau khi dời phần coding. Khung tám chu kỳ hai tuần cũng cần rà lại, không phải deadline đã chốt.
 
 Sau Sprint 0 và Sprint 1, so estimated/actual cùng nguyên nhân; sửa estimate các task còn lại và lịch, không đổi số liệu cũ để trông như đúng dự báo.
 
@@ -72,34 +76,45 @@ Sau Sprint 0 và Sprint 1, so estimated/actual cùng nguyên nhân; sửa estima
 
 Dependencies là điều kiện đầu vào phải có bằng chứng; một demo có thể chuẩn bị qua mock trước, nhưng chỉ hoàn thành sau tích hợp thật. Research kết luận “chưa đủ điều kiện” đóng timebox cùng evidence, còn task cần môi trường đó vẫn blocked.
 
-### Sprint 0 — Khung chạy được và hợp đồng thống nhất
+### Sprint 0 — Research, tài liệu và chuẩn bị
 
-**Mục tiêu:** Chạy app/DB trên cả hai máy, có health và test đầu tiên; contract policy/chat không còn lệch SPEC.
+**Mục tiêu:** Hiểu luồng sản phẩm, đồng bộ contracts, ghi khảo sát máy/model và chuẩn bị cách triển khai. Không yêu cầu app/DB/health/test suite chạy trong sprint này.
 
-**Files dự kiến:** Root pyproject/uv.lock/compose/.env.example/.gitignore/alembic/README; migrations; src/studycraft/{main,core,db,api/health,web}; docs/api, architecture, diagrams; tests/conftest và contract.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Deliverables:** docs/api, architecture, diagrams và [research notes](research-notes.md). Chuẩn bị T001 bằng ghi chú package/app factory/lifespan/config, không tạo apps/packages/evals/pipelines/infra/tests/scripts hoặc manifest chạy được.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
-| R01 | Bài tập nhập môn Python web | — | B | research / 4h | — | Tự chạy ví dụ GET/POST và test request thiếu trường; giải thích request → validation → response. Chỉ là bài tập, không thêm feature vào app. |
+| R01 | Nghiên cứu nhập môn Python web | — | B | research / 4h | — | Ghi và giải thích request → validation → response, GET/POST và lỗi thiếu trường từ tài liệu chính thức; bài tập coding hoãn sang sprint coding. |
 | R02 | Rà chênh lệch contracts và quyết định còn mở | — | A | research / 2h | — | Danh sách delta policy/thread/messages/replay + min/max từng loại còn TODO(A); xác nhận trigger nhật ký và tiêu chí stale/offline. Không gán số nghiệp vụ thay owner. |
-| R03 | Khả năng chạy model trên máy A | — | A | research / 4h | — | Ghi OS/CPU/RAM/GPU/VRAM, runtime/model/version/quantization nếu có; probe local endpoint và JSON nhỏ nếu runtime sẵn; chưa có thì ghi blocker và tiếp tục fake. |
+| R03 | Khả năng chạy model trên máy A | — | A | research / 4h | — | Ghi OS/CPU/RAM/GPU/VRAM, runtime/model/version/quantization nếu có; kiểm kết nối bằng công cụ sẵn có nếu runtime sẵn. Chưa có thì ghi blocker/owner/tác động; không giữ script, weights hoặc code app trong Sprint 0. |
 | T000 | Đồng bộ OpenAPI, DDL/ER và ADR với SPEC v3 | US-005, US-006, US-012, US-017 | A | docs / 8h | R02 | Có policy snapshot, 3 tool chat mới, chat.send theo thread, result IDs/replay bền vững; ví dụ/$ref/DDL constraints khớp; gỡ banner pending khi từng phần thực sự đã đồng bộ. Chưa chạy migration thì không ghi đã chạy. |
-| T001 | Package src, app factory và config | — | A | infra / 6h | — | Cài package Python 3.12; app factory/lifespan chạy, đọc đủ prompts/static/templates từ package; thiếu config báo rõ; .env/runtime/.ai không vào Git. |
+
+**Chuẩn bị T001:** A ghi cách tổ chức package, cấu hình cần có, vòng đời khởi động/dừng, ranh giới với T002/T004 và cách nghiệm thu sau này trong research notes. Đây là đầu ra tài liệu, không thay bằng chứng hoàn thành T001 coding.
+
+**Song song:** B đọc luồng web/user stories và examples; A rà contracts và khảo sát máy/model. Cả hai ghi câu hỏi còn mở, owner và tác động.
+
+**Điều kiện kết thúc sprint:** tài liệu chuẩn bị có nguồn, các delta/TODO có owner và tác động; hợp đồng T000 đã đồng bộ hoặc ghi rõ blocker. Có bằng chứng khảo sát R03 và kết luận giới hạn đúng. Không dùng app/test pass làm gate Sprint 0.
+
+### Nền tảng triển khai — dời khỏi Sprint 0 · TODO(A/B): sprint coding
+
+Giữ nguyên ID, estimate baseline và DoD coding bên dưới để tiếp tục sau. Chưa chọn sprint cụ thể; các task phụ thuộc chỉ chạy khi có nền tảng triển khai thật. Phần học/chuẩn bị tài liệu không tự đóng các task này.
+
+| ID | Task | US | Owner | Loại / giờ baseline | Phụ thuộc | Acceptance / DoD khi coding |
+| --- | --- | --- | --- | --- | --- | --- |
+| T001 | Package src, app factory và config | — | A | infra / 6h | — | Cấu hình Python 3.12 cho apps/api; app factory/lifespan chạy, đọc contracts/prompts từ shared và UI assets từ apps/web theo build/config; thiếu config báo rõ; .env/runtime/.ai không vào Git. |
 | T002 | Postgres, migration nền và health | — | A | infra / 4h | T001, T000 | DB local, volume bền vững; migration nền/seed workspace idempotent; health OK/503; test DB riêng. Chỉ tạo bảng cần cho increment, không destructive reset. |
 | T003 | Web shell và panel riêng | US-001, US-002, US-006, US-012, US-014 | B | FE / 6h | R01, T001 | Render các panel Tài liệu/Luyện viết/Kết quả/Chat/Nhật ký; escaped text; trạng thái trống/lỗi rõ; chưa giả lập thành feature đã hoạt động. |
 | T004 | Session, CSRF, errors và log metadata | US-018 | A | BE / 4h | T001, T002 | Signed session, Host/Origin/CSRF checks; Problem đúng contract; không log raw content/secret; có test valid và forbidden. |
 | T005 | Ví dụ API và dữ liệu giả phục vụ giao diện | US-001, US-002, US-005, US-006, US-007, US-012, US-014 | B | test / 4h | R01, T000 | Fixtures tổng hợp có nhãn giả lập; examples phù hợp schema hiện hành; mock API chỉ trong dev/test, không được báo đã lưu DB. |
 | T006 | Chạy lại setup trên máy B | — | B | docs / 4h | T002, T003, T004 | Theo README từ môi trường sạch, health/test đầu tiên pass; ghi lệnh thật và lỗi đã xử lý; không cần model. |
 
-**Song song:** B học/chạy bài tập và dựng HTML theo ví dụ trong lúc A đồng bộ contract, tạo app/DB. T003 chờ T001; không chờ model thật.
-
-**Điều kiện kết thúc sprint:** Khởi động trên cả hai máy; migration/seed/health/test pass; DB down trả 503, Origin/Host sai bị chặn; không publish ra LAN. Research model chưa thành công được ghi blocked, không báo local inference đã chạy.
+**Điều kiện hoàn thành nhóm nền tảng khi coding:** khởi động trên cả hai máy; migration/seed/health/test pass; DB down trả 503, Origin/Host sai bị chặn; không publish ra LAN. Model chưa sẵn không chặn các tests độc lập, nhưng không báo local inference đã chạy.
 
 ### Sprint 1 — Hồ sơ, tài liệu và hoạt động học
 
 **Mục tiêu:** Lưu và đọc lại tài liệu/hồ sơ/hoạt động; B hoàn thành một module backend có review.
 
-**Files dự kiến:** src/studycraft/modules/{workspace,materials,activities}, api/v1 tương ứng, execution/idempotency, db/models; migrations; web/static/js/{api,workspace}; tests/unit/integration.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Files dự kiến:** API modules/{workspace,materials,activities}/{router,service}.py, shared/execution/idempotency.py, shared/db/models.py; apps/api/migrations; Web features/workspace/*, lib/*; API tests/{unit,integration}. Các path code/test chỉ tạo khi task cần.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -121,7 +136,7 @@ Dependencies là điều kiện đầu vào phải có bằng chứng; một dem
 
 **Mục tiêu:** Nộp/lưu bài không cần model; giữ bản gốc và bản viết lại riêng.
 
-**Files dự kiến:** modules/writing/{service,policies}, modules/history/service, api/v1/{writing,history}, contracts, db/models; migrations; web/static/js/{writing,history}; tests/unit/contract/integration.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Files dự kiến:** API modules/writing/{router,service,policies}.py, modules/history/{router,service}.py, shared/{contracts,db}/*; apps/api/migrations; Web features/{writing,history}/*; API tests/{unit,contract,integration}. Các path code/test chỉ tạo khi task cần.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -143,7 +158,7 @@ Dependencies là điều kiện đầu vào phải có bằng chứng; một dem
 
 **Mục tiêu:** Có bản sửa riêng, validator kiểm edits; failure không mất bài.
 
-**Files dự kiến:** execution/{runner,context}, integrations/llm, modules/writing/{service,corrections}, prompts/correction_v2, api/v1/writing; web/static/js/writing; tests/unit/integration/fixtures.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Files dự kiến:** API shared/execution/{runner,context}.py, shared/llm/*, modules/writing/{router,service,corrections}.py, shared/prompts/correction_v2.txt; Web features/writing/*; API tests/{unit,integration,fixtures}. Các path code/test chỉ tạo khi task cần.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -165,7 +180,7 @@ Dependencies là điều kiện đầu vào phải có bằng chứng; một dem
 
 **Mục tiêu:** Mở lại hội thoại sau restart; reports chỉ từ tin hiện tại; context nhỏ độc lập retention.
 
-**Files dự kiến:** modules/chat/{service,context}, api/v1/chat, db/models; migrations; prompts/chat_v2; web/static/js/chat; tests/integration/fixtures.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Files dự kiến:** API modules/chat/{router,service,context}.py, shared/db/models.py, shared/prompts/chat_v2.txt; apps/api/migrations; Web features/chat/*; API tests/{integration,fixtures}. Các path code/test chỉ tạo khi task cần.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -186,7 +201,7 @@ Dependencies là điều kiện đầu vào phải có bằng chứng; một dem
 
 **Mục tiêu:** Tóm tắt có nguồn, counts từ DB và lưu vĩnh viễn, không form.
 
-**Files dự kiến:** modules/journals/{service,sources}, api/v1/journals, db/models; migrations; prompts/journal_v2; web/static/js/journals; tests/unit/integration.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Files dự kiến:** API modules/journals/{router,service,sources}.py, shared/db/models.py, shared/prompts/journal_v2.txt; apps/api/migrations; Web features/journals/*; API tests/{unit,integration}. Các path code/test chỉ tạo khi task cần.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -207,7 +222,7 @@ Dependencies là điều kiện đầu vào phải có bằng chứng; một dem
 
 **Mục tiêu:** Người học sửa bằng chat, giữ phiên bản cũ và correction trong lần tổng hợp sau.
 
-**Files dự kiến:** modules/journals/{service,sources}, prompts/journal_v2, api/v1/journals; web/static/js/{journals,chat}; tests/unit/integration/fixtures; ADR005.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Files dự kiến:** API modules/journals/{router,service,sources}.py, shared/prompts/journal_v2.txt; Web features/{journals,chat}/*; API tests/{unit,integration,fixtures}; ADR005. Các path code/test chỉ tạo khi task cần.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -228,7 +243,7 @@ Dependencies là điều kiện đầu vào phải có bằng chứng; một dem
 
 **Mục tiêu:** Ứng dụng có bằng chứng từng story, chạy/restore được; ghi rõ giới hạn model thật.
 
-**Files dự kiến:** tests/e2e/fixtures/integration; README; docs/planning release checklist và research notes; config chỉ nếu đã đo cần sửa.. Path app tính từ `src/studycraft/`; các thư mục code/test chỉ tạo khi task cần.
+**Files dự kiến:** tests/e2e/*; API tests/{fixtures,integration}; README; docs/planning release checklist/research notes, docs/runbooks/* và docs/operations/*; config chỉ nếu đã đo cần sửa. Các path code/test chỉ tạo khi task cần.
 
 | ID | Task | US | Owner | Loại / giờ | Phụ thuộc | Acceptance / DoD |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -252,7 +267,7 @@ Research được làm đúng lúc, không cần học hết stack trước khi 
 
 | ID / sprint | Câu hỏi cần trả lời | Tài liệu đầu vào | Kết quả phải giữ / stop rule |
 | --- | --- | --- | --- |
-| R01 / 0 · B · 4h | B tự xử lý request/validation/test được chưa? | [FastAPI Tutorial](https://fastapi.tiangolo.com/tutorial/): First Steps, Request Body, Response Model, Testing. | Ví dụ chạy được + giải thích luồng; nếu chưa, chia T003 nhỏ và pair thêm từ reserve. |
+| R01 / 0 · B · 4h | B hiểu request/validation/response thế nào? | [FastAPI Tutorial](https://fastapi.tiangolo.com/tutorial/): First Steps, Request Body, Response Model, Testing. | Ghi luồng và các ca valid/invalid; chưa viết/chạy code trong Sprint 0. Kiểm năng lực coding ở sprint triển khai. |
 | R02 / 0 · A · 2h | Contract nào lệch quyết định mới và quyết định nào chưa có? | SPEC §3/6/9, OpenAPI, schema, ADR005. | Delta checklist cho T000; chưa giải quyết hết vẫn ghi từng mục, không bật banner “đã đồng bộ”. |
 | R03 / 0 · A · 4h | Máy A chạy được runtime/model ứng viên không? | [LM Studio Chat Completions](https://lmstudio.ai/docs/developer/openai-compat/chat-completions); model card chính thức của model thực sự chọn. | Record model/version/quantization/máy/context/output/latency quan sát; chọn một ứng viên khả thi hoặc blocker cụ thể. Không tải/chạy trong task lập kế hoạch này. |
 | R04 / 1 · B · 4h | Tại sao save/read/rollback phải nằm đúng transaction? | [SQLAlchemy Session Basics](https://docs.sqlalchemy.org/en/20/orm/session_basics.html); service T102 và migration nền. | Insert/read/rollback test và sơ đồ FK/session; dùng cách async trong kiến trúc khi triển khai, không chuyển engine chỉ vì ví dụ tutorial sync. |
@@ -269,13 +284,14 @@ Research được làm đúng lúc, không cần học hết stack trước khi 
 
 **Lộ trình A:** contract/data invariants → app foundation → model feasibility → policy snapshot → validator/runner → chat durability → journal revisions → restore/release. Fine-tuning hoặc API chỉ trở thành project/task riêng khi owner chốt sau evidence, không đưa vào critical path hiện tại.
 
-Khi thực hiện research, ghi một mục tối đa một trang tại `docs/planning/research-notes.md` (chưa tạo nội dung giả bây giờ), gồm: ID/câu hỏi, timebox/actual, tài liệu/model version, cách thử, kết quả quan sát, quyết định và trade-off, task chịu ảnh hưởng, unknowns. Code POC bỏ ngoài app production và chỉ giữ nếu còn cần cho test. R03 chưa có runtime thì lưu “chưa chạy”, không tạo thông số máy hoặc output.
+Khi thực hiện research, ghi tại [research notes](research-notes.md): ID/câu hỏi, timebox/actual nếu đo, nguồn/version, cách kiểm, kết quả quan sát, quyết định/trade-off, task chịu ảnh hưởng và TODO(owner). Sprint 0 không giữ code POC, script hoặc tests. Phần cứng đọc được vẫn ghi là fact; runtime/inference chưa chạy thì ghi “chưa kiểm chứng”, không bịa model output hoặc số đo.
 
 ## 7. Phụ thuộc, đường găng và chỗ làm song song
 
 ```mermaid
 flowchart LR
-  S0["Sprint 0: contract + skeleton"] --> S1["Sprint 1: workspace/material/activity"]
+  S0["Sprint 0: research + docs"] --> F0["T001-T006: coding sprint TODO"]
+  F0 --> S1["Sprint 1 baseline: workspace/material/activity"]
   S1 --> S2["Sprint 2: submit/history"]
   S2 --> S3["Sprint 3: correction"]
   S3 --> S4["Sprint 4: durable chat"]
@@ -388,7 +404,7 @@ Chưa tạo sẵn một báo cáo “research completed” hoặc nội dung evi
 
 ## 12. Bắt đầu từ đâu và điều kiện hoàn thành toàn lộ trình
 
-**Phiên đầu tiên:** A/B thống nhất giờ/tuần và đọc luồng nộp–sửa; B bắt đầu R01, A làm R02 và T001. R03 chạy song song nếu máy/runtime sẵn. Khi contract T000 chốt, B có mock/examples cho các panel; khi DB/security sẵn, B tự chạy lại setup T006.
+**Phiên Sprint 0:** A/B thống nhất giờ/tuần và đọc luồng nộp–sửa; B nghiên cứu R01/examples, A làm R02/T000 và ghi chuẩn bị T001. R03 giữ khảo sát máy/runtime và blocker. Cả hai chọn lịch coding cho T001–T006 sau Sprint 0 trước khi nhận các task phụ thuộc.
 
 **Task backend đầu của B:** T103 material service sau R04/T102; owner B chịu trách nhiệm cả validation/reload/tests, A review transaction/ownership. Không mở chat/model/journal cùng lúc trước vòng sửa bài cơ bản.
 

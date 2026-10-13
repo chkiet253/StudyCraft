@@ -1,6 +1,8 @@
 # StudyCraft — Cách đọc docs/
 
-**Cập nhật: 2026-10-08.** Điểm bắt đầu cho nhóm hai người. A là chủ dự án/AI Engineer; B là thành viên cùng phát triển. Tài liệu mô tả yêu cầu và thiết kế dự kiến; không phải bằng chứng ứng dụng đã chạy.
+**Cập nhật: 2026-10-13.** Điểm bắt đầu cho nhóm hai người. A là chủ dự án/AI Engineer; B là thành viên cùng phát triển. Sprint 0 chỉ nghiên cứu, tài liệu và chuẩn bị; không giữ code ứng dụng. Tài liệu mô tả yêu cầu/thiết kế, không phải bằng chứng ứng dụng đã chạy.
+
+Cấu trúc mục tiêu được giữ tại [SPEC §12](SPEC.md#12-project-structure): backend `apps/api/`, UI `apps/web/`, app mở rộng `apps/{worker,ai-service}/`, client `packages/api-client/`, AI workflows `evals/`/`pipelines/`, hạ tầng `infra/`, e2e `tests/e2e/` và scripts dùng chung. Đây là đường dẫn dự kiến, không phải các thư mục đã triển khai.
 
 ## 1. Đọc lần đầu theo thứ tự này
 
@@ -24,6 +26,7 @@ Không cần đọc hết OpenAPI JSON hoặc tất cả ADR trước task đầ
 | Vì sao làm tính năng này, có thuộc MVP không? | [PRD](requirements/prd.md), [định nghĩa sản phẩm](STUDYCRAFT_PRODUCT_DEFINITION.md). |
 | Người dùng mong đợi gì, khi nào tính năng đạt? | [User stories](requirements/user-stories.md): acceptance criteria của US liên quan. |
 | Ai làm, làm khi nào, phải chờ task nào? | [Roadmap](planning/implementation-roadmap.md), [đồ thị task](diagrams/implementation-task-dependencies.mmd). |
+| T001 chuẩn bị gì, R03 đã khảo sát được gì? | [Ghi chú Sprint 0](planning/research-notes.md): giải thích hai task, phần cứng đã quan sát, blocker và TODO; coding T001 chưa hoàn thành. |
 | Thành phần giao tiếp và chịu trách nhiệm thế nào? | [System design](architecture/system-design.md), [diagram tổng thể](diagrams/high-level-architecture.mmd), SPEC §5. |
 | Vì sao chọn monolith, DB, runner hoặc local model? | ADR [001](architecture/adr/001-modular-monolith.md), [002](architecture/adr/002-postgres-durable-records.md), [003](architecture/adr/003-bounded-model-requests.md), [004](architecture/adr/004-local-model-adapter.md). |
 | Chat/nhật ký lưu gì, có giữ bản cũ không? | SPEC §3/6/9, ADR [005](architecture/adr/005-ephemeral-chat-versioned-journals.md). Tên file ADR còn chữ ephemeral do lịch sử; nội dung đã cập nhật quyết định lưu chat. |
@@ -37,7 +40,7 @@ Không cần đọc hết OpenAPI JSON hoặc tất cả ADR trước task đầ
 
 | Sprint | Cả hai đọc | A đọc sâu | B đọc sâu |
 | --- | --- | --- | --- |
-| **0 — Khung và contracts** | Overview, PRD, roadmap Sprint 0; SPEC §3/12; coding/Git guides. | SPEC §5/6/8/9; OpenAPI/schema pending; ADR001/002/004/006 cho R02/R03/T000. | Story liên quan các panel, API overview và examples đã chốt cho T005; README root và service mẫu khi có. |
+| **0 — Research, docs và chuẩn bị** | Overview, PRD, roadmap Sprint 0; SPEC §3/12; [research notes](planning/research-notes.md). | SPEC §5/6/8/9; contracts/ADRs cho R02/R03/T000 và chuẩn bị T001. | User stories, API overview/examples, ghi chú luồng request/validation/response; coding hoãn sang sprint triển khai. |
 | **1 — Workspace** | US-001–004 và task Sprint 1. | Workspace/version/idempotency/ownership trong SPEC §6/8/9. | Material/activity input/output, schema workspaces/materials/activities và acceptance của module mình nhận. |
 | **2 — Nộp bài** | US-005/006/010/011; quy tắc source của US-008. | WritingPolicy/exercise snapshot, submissions/history và immutable data trong SPEC §6/9. | Schema endpoint chọn đề/nộp/rewrite/history; min/max của policy, errors và retry; cấu trúc UI trong SPEC §12. |
 | **3 — Sửa bài** | US-007–009/011/018, SPEC §7 và các tình huống §14. | Provider output, exact offsets/edits, runner/context/failure; ADR003/004. | Feedback schema và fixtures; pending/error/retry/empty corrections; phân biệt fake với local evidence. |

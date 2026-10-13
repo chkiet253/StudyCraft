@@ -1,8 +1,8 @@
-# ADR 001 — Monolith với web cùng origin
+# ADR 001 — Backend modular monolith và web cùng origin
 
 ## Status
 
-Proposed — 2026-10-07. Yêu cầu một người học local đã có trong [PRD](../../requirements/prd.md); bố trí triển khai này là đề xuất.
+Proposed — cập nhật cấu trúc 2026-10-13 theo [SPEC §12](../../SPEC.md#12-project-structure). Backend/UI tách thư mục apps/api và apps/web; yêu cầu một người học local đã có trong [PRD](../../requirements/prd.md). Cấu hình triển khai cùng origin vẫn cần kiểm chứng.
 
 ## Context
 
@@ -10,7 +10,7 @@ MVP cần lưu hồ sơ, sửa bài, chat và nhật ký; không có nhu cầu s
 
 ## Decision
 
-Một ứng dụng Python 3.12/FastAPI, một Uvicorn worker; các module gọi hàm trực tiếp. Web Jinja/HTML/CSS/JS cùng origin với API. PostgreSQL và runtime model là process local riêng, không phải các microservice nghiệp vụ. Dùng async I/O cho DB/model, không chạy inference CPU trong app.
+Backend Python 3.12/FastAPI tại `apps/api/`, một Uvicorn worker; các domain module gọi hàm trực tiếp. Web Jinja/HTML/CSS/JS tổ chức tại `apps/web/`, giao tiếp API cùng origin. PostgreSQL và runtime model là process local riêng. Worker/AI service trong cây repo là vị trí mở rộng; chưa tách các domain thành microservice hoặc thêm background queue. Dùng async I/O cho DB/model, không chạy inference CPU trong API.
 
 ## Alternatives considered (with trade-offs)
 
@@ -20,8 +20,8 @@ Một ứng dụng Python 3.12/FastAPI, một Uvicorn worker; các module gọi 
 
 ## Consequences (positive/negative)
 
-- **Positive:** một nơi triển khai và kiểm tra; cùng origin giảm cấu hình giao tiếp; PostgreSQL transactions giữ thay đổi nghiệp vụ nhất quán.
-- **Negative:** lỗi process app ảnh hưởng toàn bộ UI/API; thay đổi module vẫn deploy cùng app; một worker không bảo đảm high availability. Runtime cùng máy vẫn tranh RAM/CPU.
+- **Positive:** backend có một ranh giới nghiệp vụ/transaction; thư mục backend và UI tách rõ; cùng origin giữ quy tắc giao tiếp; PostgreSQL transactions giữ thay đổi nghiệp vụ nhất quán.
+- **Negative:** thay đổi domain backend vẫn deploy cùng API; tách thư mục UI/API cần cấu hình assets/origin khi triển khai; một API worker không bảo đảm high availability. Runtime cùng máy vẫn tranh RAM/CPU.
 
 ## Revisit trigger
 

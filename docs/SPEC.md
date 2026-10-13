@@ -3,7 +3,7 @@ artifact_type: task
 title: StudyCraft MVP implementation specification
 status: draft
 version: 3
-updated: 2026-10-08
+updated: 2026-10-13
 scope: F01, correction-only F02, history and journal summaries from F05; local model
 consumers: [Claude Code, two-person development team]
 sources: [docs/STUDYCRAFT_PRODUCT_DEFINITION.md, user decisions dated 2026-10-06 and 2026-10-08]
@@ -77,8 +77,8 @@ Giả định triển khai có thể điều chỉnh:
 
 | ID | Giả định | Phạm vi xác nhận |
 | --- | --- | --- |
-| A01 | Python 3.12, FastAPI, PostgreSQL; một người dùng local, server bind 127.0.0.1, một process/worker. | Giữ stack cũ; không phải SaaS/public deployment. |
-| A02 | Jinja2 + HTML/CSS/JS thuần; một trang có tab Tài liệu, Luyện viết/Kết quả, Chat, Nhật ký. | Không cần Node build hoặc multi-agent. |
+| A01 | Python 3.12, FastAPI, PostgreSQL; một người dùng local, server bind 127.0.0.1, một process/worker API. | Giữ stack cũ; không phải SaaS/public deployment. |
+| A02 | Jinja2 + HTML/CSS/JS thuần trong apps/web/; một trang có tab Tài liệu, Luyện viết/Kết quả, Chat, Nhật ký. | Framework frontend chưa đổi; backend nằm riêng tại apps/api/, dùng cùng origin; không multi-agent. |
 | A03 | Giới hạn từ theo loại bài; exercise lưu snapshot policy gồm loại bài, phiên bản và min/max. | Ngưỡng từng loại: TODO(project owner). Không dùng 300 từ/6.000 ký tự làm quy tắc chung. Giới hạn đề/material hiện có là cấu hình kỹ thuật đề xuất. |
 | A04 | Hồ sơ có mục đích viết tùy chọn, trình độ tự khai báo mặc định unknown, loại bài mặc định general_paragraph. | Chưa có trình độ cụ thể; không bắt làm placement test. |
 | A05 | Ngày Asia/Ho_Chi_Minh; tuần thứ Hai–Chủ nhật. | Ngày/tuần đang diễn ra ghi rõ dữ liệu đến thời điểm tổng hợp. |
@@ -145,7 +145,8 @@ Traceability:
 | Component | Responsibility |
 | --- | --- |
 | Browser | Khu vực riêng Tài liệu, Luyện viết/Kết quả, Chat, Nhật ký; tải lịch sử chat phân trang từ DB; không tự gửi câu hỏi sau sửa bài. |
-| FastAPI/application tools | Input validation, local session, transactions, version/idempotency, dữ liệu học và API allowlist. |
+| Web application — apps/web | Lắp trang và các panel UI, dùng API cùng origin; không sở hữu DB hoặc transaction nghiệp vụ. |
+| FastAPI/application tools — apps/api | Backend modular monolith: input validation, local session, transactions, version/idempotency, dữ liệu học và API allowlist. |
 | Bounded runner | Chạy đúng một mode theo action; đọc snapshot → model → validate → persist; không plan tự do/tool calling. |
 | LocalModelClient | HTTP local model; fake adapter cho tests. Không có Claude adapter hoặc cloud fallback trong MVP. |
 | Context builder | Sửa bài dùng đề/bài/material snapshot/profile; chat chỉ lấy context đã chọn; nhật ký lấy ghi chú học + events + đính chính. |
@@ -188,7 +189,7 @@ flowchart LR
 - Error nội bộ được chuyển sang application/problem+json theo OpenAPI; không trả envelope Error trực tiếp qua HTTP. 400 MALFORMED_REQUEST/405 METHOD_NOT_ALLOWED/413 PAYLOAD_TOO_LARGE/415 UNSUPPORTED_MEDIA_TYPE là lỗi transport trước claim, không thêm vào enum nội bộ hoặc persist receipt/run.
 - history.list nội bộ nhận before_id=null và limit=20 khi HTTP GET bỏ query tương ứng. Các GET lấy workspace_id/run_id/thread_id từ path và không cần Idempotency-Key.
 
-Tool là application operation có schema, không phải quyền model tự gọi API. Model trả dữ liệu, application service kiểm tra và quyết định việc được ghi. Document JSON dưới đây là manifest `src/studycraft/contracts/tools.json`; validate schema con input/output/provider_outputs với `$ref` resolve từ root, draft 2020-12, bật uuid/date/date-time format checks.
+Tool là application operation có schema, không phải quyền model tự gọi API. Model trả dữ liệu, application service kiểm tra và quyết định việc được ghi. Document JSON dưới đây là manifest `apps/api/src/shared/contracts/tools.json`; validate schema con input/output/provider_outputs với `$ref` resolve từ root, draft 2020-12, bật uuid/date/date-time format checks.
 
 ```json
 {
@@ -434,136 +435,140 @@ Retention và xử lý sai:
 
 ## 12. Project Structure
 
-Cấu trúc mục tiêu cho một ứng dụng có thể đóng gói, kiểm thử và vận hành: **modular monolith** (một ứng dụng, chia theo nghiệp vụ). Các path code/config/tests bên dưới là dự kiến, chỉ tạo khi increment cần; task này không tạo tooling, CI, Git hook hay mã ứng dụng.
+Cấu trúc mục tiêu của repo; các thư mục code/tooling chỉ tạo khi increment cần. Sprint 0 tiếp tục chỉ giữ tài liệu và nghiên cứu.
 
 ```text
 StudyCraft/
-├── AGENTS.md                              # Hướng dẫn làm việc trong repo.
-├── .agents/                               # Playbooks hiện có.
-├── docs/
-│   ├── STUDYCRAFT_PRODUCT_DEFINITION.md    # Nguồn nghiệp vụ; cập nhật theo quyết định được chốt.
-│   ├── SPEC.md                            # Hợp đồng triển khai và nghiệm thu.
-│   ├── getting-started/project-overview.md # Tổng quan và đường dẫn cho người mới.
-│   ├── requirements/                     # PRD và user stories.
-│   ├── architecture/                     # System design, database schema và ADR.
-│   ├── api/                              # OpenAPI và quy ước HTTP.
-│   ├── diagrams/                         # Mermaid architecture/ER.
-│   ├── guides/                           # Coding standards và Git workflow.
-│   └── manual_project/                   # Tài liệu hướng dẫn riêng hiện có.
-├── README.md                             # Setup, chạy, migration, backup/restore và giới hạn.
-├── pyproject.toml                        # Python 3.12, dependencies, build src package, test config.
-├── uv.lock                               # Khóa phiên bản dependency đã kiểm chứng khi coding.
-├── .env.example                          # Tên biến cấu hình; không chứa secret thật.
-├── .gitignore                            # Loại .ai/, secrets và runtime outputs.
-├── compose.yaml                          # PostgreSQL local với named volume; chưa public deploy.
-├── alembic.ini                           # Cấu hình migration.
-├── migrations/
-│   ├── env.py                            # Kết nối DB và metadata của models.
-│   └── versions/                         # Migration tuần tự theo increment, giữ dữ liệu cũ.
-├── src/studycraft/
-│   ├── __init__.py                       # Package ứng dụng.
-│   ├── main.py                           # create_app, lifespan, lắp routers, startup recovery.
-│   ├── core/
-│   │   ├── config.py                     # Parse/validate env, timezone và giới hạn hữu hạn.
-│   │   ├── errors.py                     # Mã lỗi nghiệp vụ; không phụ thuộc HTTP.
-│   │   ├── security.py                   # Session, CSRF, Origin/Host và loopback policy.
-│   │   └── logging.py                    # Log metadata, redaction và rotation.
-│   ├── db/
-│   │   ├── base.py                       # SQLAlchemy metadata/base chung.
-│   │   ├── session.py                    # Engine, session và transaction ngắn.
-│   │   └── models.py                     # ORM tables/constraints; Alembic dùng metadata này.
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml
+│   │   ├── deploy-staging.yml
+│   │   ├── deploy-prod.yml
+│   │   └── security.yml
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   ├── CODEOWNERS
+│   └── dependabot.yml
+├── .agents/
+├── apps/
 │   ├── api/
-│   │   ├── dependencies.py               # Inject session, actor, config và model client.
-│   │   ├── errors.py                     # Chuyển lỗi sang RFC 9457, không lộ nội dung riêng tư.
-│   │   ├── health.py                     # Health app/DB, không inference.
-│   │   └── v1/
-│   │       ├── router.py                 # Ghép các router dưới /api/v1.
-│   │       ├── workspace.py              # HTTP hồ sơ và bootstrap workspace.
-│   │       ├── materials.py              # HTTP thư viện tài liệu.
-│   │       ├── activities.py             # HTTP kế hoạch/trạng thái tự khai báo.
-│   │       ├── writing.py                # HTTP đề, bài nộp và kết quả sửa.
-│   │       ├── chat.py                   # HTTP tạo/liệt kê/đọc hội thoại và gửi tin.
-│   │       ├── journals.py               # HTTP tổng hợp/đính chính nhật ký.
-│   │       └── history.py                # HTTP lịch sử artifacts và trạng thái run.
-│   ├── modules/
-│   │   ├── workspace/service.py          # Profile/goal, version và workspace bootstrap.
-│   │   ├── materials/service.py          # Material/catalog snapshots và ownership.
-│   │   ├── activities/service.py         # Thay trạng thái do user, ghi event.
-│   │   ├── writing/
-│   │   │   ├── service.py                # Tạo đề, lưu bài trước inference, lưu feedback.
-│   │   │   ├── policies.py               # Policy theo loại bài, snapshot và đếm từ.
-│   │   │   └── corrections.py            # Kiểm quote/offset và ghép text edits.
-│   │   ├── chat/
-│   │   │   ├── service.py                # Persist thread/messages, replay và reports.
-│   │   │   └── context.py                # Chọn lượt gần nhất từ DB theo budget.
-│   │   ├── journals/
-│   │   │   ├── service.py                # Tổng hợp, đính chính, append revisions.
-│   │   │   └── sources.py                # Kỳ học, counts và chữ ký nguồn.
-│   │   └── history/service.py            # Cursor đọc artifacts và trạng thái run.
-│   ├── execution/
-│   │   ├── runner.py                     # Deadline/attempts, terminal status, recovery.
-│   │   ├── idempotency.py                # Claim receipt, hash input, replay từ DB.
-│   │   └── context.py                    # Snapshot/budget dùng chung cho các mode.
-│   ├── integrations/llm/
-│   │   ├── client.py                     # Giao diện nhỏ dùng bởi runner.
-│   │   ├── local.py                      # HTTPX local adapter, đóng kết nối đúng vòng đời.
-│   │   └── fake.py                       # Kết quả xác định cho demo/tests, không gọi mạng.
-│   ├── contracts/
-│   │   ├── tools.json                    # Manifest mục 6 gồm schemas tool và provider.
-│   │   └── validation.py                 # Resolve schema, format và extra-field checks.
-│   ├── prompts/
-│   │   ├── correction_v2.txt             # Chỉ sửa lỗi bài hoàn thành.
-│   │   ├── chat_v2.txt                   # Hỏi đáp chủ động và trích khai báo hiện tại.
-│   │   └── journal_v2.txt                # Tổng hợp/đính chính với nguồn rõ.
-│   └── web/
-│       ├── routes.py                     # HTML entrypoint cùng origin.
-│       ├── templates/
-│       │   ├── base.html                 # Layout và bootstrap an toàn.
-│       │   └── index.html                # Các panel học tập, chat và nhật ký riêng.
-│       └── static/
-│           ├── css/app.css               # Layout responsive.
-│           └── js/
-│               ├── api.js                # HTTP, CSRF, idempotency và hiển thị lỗi.
-│               ├── workspace.js          # Hồ sơ, tài liệu và hoạt động học.
-│               ├── writing.js            # Nộp bài và hiển thị bản sửa riêng.
-│               ├── chat.js               # Danh sách hội thoại, phân trang, gửi/reload.
-│               └── journals.js           # Đọc kỳ và đính chính có revision.
-└── tests/
-    ├── conftest.py                        # PostgreSQL riêng, fake model, client/session.
-    ├── unit/                             # Policy, offsets, budgets, periods, signatures.
-    ├── contract/                         # OpenAPI/tool/provider schemas và ví dụ.
-    ├── integration/                      # Transaction, ownership, replay, restart, retention.
-    ├── e2e/                              # Browser: nộp/sửa, mở lại chat, nhật ký.
-    └── fixtures/                         # Dữ liệu giả và tình huống adversarial cố định.
+│   │   ├── src/
+│   │   │   ├── core/
+│   │   │   ├── modules/
+│   │   │   │   ├── workspace/
+│   │   │   │   ├── materials/
+│   │   │   │   ├── activities/
+│   │   │   │   ├── writing/
+│   │   │   │   ├── chat/
+│   │   │   │   ├── journals/
+│   │   │   │   └── history/
+│   │   │   ├── shared/
+│   │   │   │   ├── contracts/
+│   │   │   │   ├── db/
+│   │   │   │   ├── execution/
+│   │   │   │   ├── http/
+│   │   │   │   ├── llm/
+│   │   │   │   └── prompts/
+│   │   │   └── main.py
+│   │   ├── migrations/
+│   │   │   ├── env.py
+│   │   │   └── versions/
+│   │   ├── tests/
+│   │   │   ├── unit/
+│   │   │   ├── contract/
+│   │   │   ├── integration/
+│   │   │   └── fixtures/
+│   │   ├── pyproject.toml
+│   │   ├── uv.lock
+│   │   ├── alembic.ini
+│   │   └── Dockerfile
+│   ├── web/
+│   │   ├── app/
+│   │   ├── features/
+│   │   ├── shared/ui/
+│   │   ├── lib/
+│   │   └── Dockerfile
+│   ├── worker/
+│   │   ├── src/
+│   │   └── Dockerfile
+│   └── ai-service/
+│       ├── src/
+│       ├── tests/
+│       └── Dockerfile
+├── packages/
+│   └── api-client/
+│       └── src/
+├── evals/
+│   ├── datasets/
+│   ├── suites/
+│   ├── judges/
+│   └── reports/
+├── pipelines/
+│   ├── ingestion/
+│   ├── training/
+│   └── registry/
+├── infra/
+│   ├── docker/
+│   │   └── compose.yaml
+│   ├── terraform/
+│   ├── k8s/helm/
+│   ├── monitoring/
+│   ├── vector-db/
+│   └── gpu/
+├── tests/e2e/
+├── scripts/
+├── docs/
+│   ├── README.md
+│   ├── SPEC.md
+│   ├── STUDYCRAFT_PRODUCT_DEFINITION.md
+│   ├── getting-started/
+│   ├── requirements/
+│   ├── architecture/adr/
+│   ├── api/
+│   ├── diagrams/
+│   ├── guides/
+│   ├── manual_project/
+│   ├── planning/
+│   ├── runbooks/
+│   ├── operations/
+│   ├── security/
+│   └── ai/
+├── .env.example
+├── .gitignore
+├── .pre-commit-config.yaml
+├── justfile
+├── AGENTS.md
+├── README.md
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── CHANGELOG.md
+└── LICENSE
 ```
 
-Quy tắc phụ thuộc:
+Quy tắc đường dẫn và phụ thuộc:
 
-- API/web nhận input và gọi service; service xử lý nghiệp vụ, truy vấn ORM và sở hữu transaction. Không đặt SQL hoặc gọi model trực tiếp trong router/template.
-- Service dùng execution và local/fake client; integration không import router. Không tạo generic repository, event bus, microservice, Redis/Celery hoặc tầng wrapper chưa có nhu cầu.
-- Mỗi thư mục Python là package có `__init__.py` khi tạo. Build config đóng gói `src/studycraft`, contracts/prompts/templates/static; đọc resource qua package, không dựa vào working directory.
-- OpenAPI là contract HTTP; manifest là contract nội bộ/provider. Contract tests kiểm tra ánh xạ, tránh hai bản lệch nhau. Không sinh thêm bộ DTO trùng lặp nếu schema hiện có đã đủ.
-- Khởi động bằng app factory (hàm tạo ứng dụng) để tests tạo instance độc lập; DB engine/model HTTP client tạo/đóng qua lifespan. Một worker theo quyết định MVP.
-- Seed workspace/catalog/đề mẫu qua migration khi cần; chưa tạo CLI/script riêng. Backup/restore hướng dẫn trong README, phải kiểm tra restore trên DB riêng.
-- Chọn src layout thay flat app để kiểm tra đúng package được cài và tách nghiệp vụ; đổi lại phải cấu hình build/package data ngay I-01. “Production” ở đây là tổ chức mã và vòng đời vận hành; public hosting, HA và scale chưa thuộc MVP.
+- Backend modular monolith nằm tại `apps/api/src/`: `core/` giữ cấu hình/quyền/log; `modules/<domain>/` giữ router và service nghiệp vụ; `shared/` giữ DB, runner, model adapter, HTTP helpers và contracts/prompts dùng chung. Router gọi service; service sở hữu transaction; không giữ transaction khi chờ model.
+- Giao diện nằm tại `apps/web/`: `app/` lắp trang, `features/` giữ từng luồng, `shared/ui/` giữ thành phần chung, `lib/` giữ adapter HTTP/CSRF/idempotency. Web và API dùng cùng origin; session/quyền ghi vẫn do API kiểm. Packaging/UI assets được cấu hình trong I-01, không phụ thuộc working directory hoặc đường dẫn package cũ.
+- Backend tests/migrations thuộc `apps/api/`; e2e liên ứng dụng thuộc `tests/e2e/`; Docker Compose local thuộc `infra/docker/`; thao tác repo tập trung qua `scripts/` và `justfile`. Migration versioned, forward-only; sửa sai bằng migration tiếp theo, không reset dữ liệu thật.
+- `packages/api-client/` nhận mã sinh từ hợp đồng hiện có `docs/api/openapi.json`; không viết tay một bộ request/response trùng. Manifest tool/provider ở `apps/api/src/shared/contracts/tools.json` vẫn là hợp đồng nội bộ; contract tests kiểm mapping HTTP và domain.
+- `apps/worker/`, `apps/ai-service/`, pipelines, evals và hạ tầng mở rộng là vị trí dành cho giai đoạn có yêu cầu tương ứng. MVP vẫn một API worker, local/fake adapter và không hàng đợi; không tự thêm training, vector DB, GPU hosting hoặc cloud deployment. CI/hooks và deploy workflows trong cây là cấu trúc dự kiến, chưa được cấu hình/chạy trong task tài liệu này.
 
-Dependencies dự kiến: FastAPI, uvicorn, SQLAlchemy, psycopg, Alembic, Jinja2, Pydantic settings, jsonschema, httpx; pytest/Playwright cho tests. Không thêm CI, pre-commit hoặc Git hook trong task tài liệu này.
+Dependencies dự kiến: FastAPI, uvicorn, SQLAlchemy, psycopg, Alembic, Jinja2, Pydantic settings, jsonschema, httpx; pytest/Playwright cho tests. Jinja/HTML/CSS/JS vẫn là giả định giao diện; cấu trúc này không tự chốt framework frontend mới.
 
 ## 13. Implementation Plan
 
-Mỗi increment chạy/test được trên các increment trước; không phụ thuộc mã của increment sau. Paths rút gọn dưới đây tính từ `src/studycraft/`, ngoại trừ `docs/`, `tests/`, `migrations/` và config ở root. Ưu tiên sửa bài trước chat/nhật ký.
+Mỗi increment chạy/test được trên các increment trước; không phụ thuộc mã của increment sau. Quy ước: API = `apps/api/src/`, Web = `apps/web/`, API tests = `apps/api/tests/`; migration/config backend ở `apps/api/`, còn `docs/`, `infra/`, `packages/`, `scripts/` và `tests/e2e/` tính từ root. Ưu tiên sửa bài trước chat/nhật ký.
 
 | ID | Scope | Files touched | Definition of done |
 | --- | --- | --- | --- |
-| I-01 | App, database, local web shell/config. | Root pyproject/lock/compose/env/alembic/README; main.py, core/*, db/*, api/health.py, web/*; migrations, tests/conftest.py. | Sau uv sync, các lệnh dự kiến docker compose up -d db, uv run alembic upgrade head, uv run uvicorn studycraft.main:create_app --factory --host 127.0.0.1 chạy; health/seed/local guards pass; package chứa đủ resources; không cần model. |
-| I-02 | US-01/02/03: hồ sơ, thư viện, việc học. | contracts/*, api/v1/{router,workspace,materials,activities}.py, modules/{workspace,materials,activities}/service.py, execution/idempotency.py, web/static/js/{api,workspace}.js, tests/unit và integration. | Unknown level hợp lệ; catalog/text save/reload; version conflict không ghi đè; completed chỉ do user action; không upload/chat ingestion. |
-| I-03 | US-04/09: đề, policy theo loại bài, submission/history. | docs/api/openapi.json, docs/architecture/database-schema.md, docs/diagrams/database-er.mmd, docs/requirements/*; modules/writing/{service,policies}.py, modules/history/service.py, db/models.py, contracts/*, api/v1/{writing,history}.py, web/static/js/writing.js, migrations, tests/contract và integration. | Đồng bộ policy snapshot và bỏ trần chung trong OpenAPI/DDL trước coding. Test min/max và thiếu policy bằng fixture; ngưỡng thật TODO(project owner). Nộp/revision giữ bản gốc; history cursor đúng; model tắt vẫn lưu được. |
-| I-04 | US-05/09: sửa bài với fake/local adapter. | execution/{runner,context}.py, integrations/llm/*, modules/writing/corrections.py, prompts/correction_v2.txt, web/static/js/writing.js, tests/unit và integration. | Fake demo nộp→sửa; edits hợp lệ; không next-step/score/follow-up; lỗi không mất bài; local smoke riêng sau khi có runtime/model. Các limit là cấu hình hữu hạn, chưa phải cam kết tốc độ. |
-| I-05 | US-06/07/09: chat riêng, lịch sử bền vững, reports ngắn. | docs/api/*, docs/architecture/{system-design,database-schema}.md, docs/architecture/adr/005-ephemeral-chat-versioned-journals.md, docs/diagrams/*, docs/requirements/*; modules/chat/*, db/models.py, migrations, contracts/*, api/v1/chat.py, prompts/chat_v2.txt, web/static/js/chat.js, tests/contract và integration. | Đồng bộ 3 tool mới và chat.send/thread/message schemas, DDL/ER trước coding. Tạo/chọn hội thoại, gửi, reload/restart, model off đọc lịch sử; same key không trùng message/report. Context nhỏ không xóa tin. Failed/interrupted giữ tin đã commit. Không raw chat trong logs/receipts. |
-| I-06 | US-07/08/09: nhật ký vĩnh viễn và đính chính. | modules/journals/*, api/v1/journals.py, prompts/journal_v2.txt, web/static/js/journals.js, migrations, tests/unit và integration. | Mở kỳ tổng hợp khi nguồn đổi; counts deterministic; không form; revision cũ luôn còn; đính chính được giữ khi rebuild; conflict không ghi đè; báo tuần không phân bổ thành ngày; không TTL. |
-| I-07 | Full loop và vận hành local. | tests/e2e, tests/fixtures, README; UI nếu kiểm tra phát hiện lỗi. | Browser desktop/mobile pass; restore DB riêng giữ artifacts/chat/revisions/receipts; local smoke ghi rõ model/hardware/kết quả; pilot ghi thao tác gây phiền; chưa cần benchmark hoặc tính phí. |
+| I-01 | API, database và web shell/config. | apps/api/{pyproject.toml,uv.lock,alembic.ini,Dockerfile}; API main.py, core/*, shared/{db,http}/*; apps/api/migrations, API tests/conftest.py; Web app/*, shared/ui/*, Dockerfile; infra/docker/compose.yaml; .env.example, justfile, README. | Trong apps/api/: uv sync, uv run alembic upgrade head, uv run uvicorn main:create_app --factory --app-dir src --host 127.0.0.1; tại root: docker compose -f infra/docker/compose.yaml up -d db. Các lệnh chỉ runnable sau coding; health/seed/local guards và web cùng origin pass; resources lấy từ đúng app; không cần model. |
+| I-02 | US-01/02/03: hồ sơ, thư viện, việc học. | API modules/{workspace,materials,activities}/{router,service}.py, shared/contracts/*, shared/execution/idempotency.py; Web features/workspace/*, lib/*; API tests/unit và integration. | Unknown level hợp lệ; catalog/text save/reload; version conflict không ghi đè; completed chỉ do user action; không upload/chat ingestion. |
+| I-03 | US-04/09: đề, policy theo loại bài, submission/history. | docs/api/openapi.json, docs/architecture/database-schema.md, docs/diagrams/database-er.mmd, docs/requirements/*; API modules/writing/{router,service,policies}.py, modules/history/{router,service}.py, shared/{db,contracts}/*; apps/api/migrations; Web features/{writing,history}/*; API tests/{unit,contract,integration}. | Đồng bộ policy snapshot và bỏ trần chung trong OpenAPI/DDL trước coding. Test min/max và thiếu policy bằng fixture; ngưỡng thật TODO(project owner). Nộp/revision giữ bản gốc; history cursor đúng; model tắt vẫn lưu được. |
+| I-04 | US-05/09: sửa bài với fake/local adapter. | API shared/execution/{runner,context}.py, shared/llm/*, modules/writing/corrections.py, shared/prompts/correction_v2.txt; Web features/writing/*; API tests/unit và integration. | Fake demo nộp→sửa; edits hợp lệ; không next-step/score/follow-up; lỗi không mất bài; local smoke riêng sau khi có runtime/model. Các limit là cấu hình hữu hạn, chưa phải cam kết tốc độ. |
+| I-05 | US-06/07/09: chat riêng, lịch sử bền vững, reports ngắn. | docs/api/*, docs/architecture/{system-design,database-schema}.md, docs/architecture/adr/005-ephemeral-chat-versioned-journals.md, docs/diagrams/*, docs/requirements/*; API modules/chat/*, shared/{db,contracts}/*, shared/prompts/chat_v2.txt; apps/api/migrations; Web features/chat/*; API tests/contract và integration. | Đồng bộ 3 tool mới và chat.send/thread/message schemas, DDL/ER trước coding. Tạo/chọn hội thoại, gửi, reload/restart, model off đọc lịch sử; same key không trùng message/report. Context nhỏ không xóa tin. Failed/interrupted giữ tin đã commit. Không raw chat trong logs/receipts. |
+| I-06 | US-07/08/09: nhật ký vĩnh viễn và đính chính. | API modules/journals/*, shared/prompts/journal_v2.txt; apps/api/migrations; Web features/journals/*; API tests/unit và integration. | Mở kỳ tổng hợp khi nguồn đổi; counts deterministic; không form; revision cũ luôn còn; đính chính được giữ khi rebuild; conflict không ghi đè; báo tuần không phân bổ thành ngày; không TTL. |
+| I-07 | Full loop và vận hành local. | tests/e2e/*, API tests/fixtures/*, README, docs/runbooks/*, docs/operations/*; UI nếu kiểm tra phát hiện lỗi. | Browser desktop/mobile pass; restore DB riêng giữ artifacts/chat/revisions/receipts; local smoke ghi rõ model/hardware/kết quả; pilot ghi thao tác gây phiền; chưa cần benchmark hoặc tính phí. |
 
-Verification dự kiến: `uv run pytest tests/unit tests/contract tests/integration` và `uv run pytest tests/e2e`; chỉ runnable sau khi coding prerequisites. Fake mặc định; local smoke chủ động, không tự tải model/cloud. Test policy ít nhất hai loại có ngưỡng khác nhau, đúng biên, ngoài biên và đổi policy sau tạo exercise; fixture không phải ngưỡng sản phẩm.
+Verification dự kiến: trong `apps/api/` chạy `uv run pytest tests/unit tests/contract tests/integration`; e2e tại root chạy `uv run --project apps/api pytest tests/e2e`; chỉ runnable sau khi coding prerequisites. Fake mặc định; local smoke chủ động, không tự tải model/cloud. Test policy ít nhất hai loại có ngưỡng khác nhau, đúng biên, ngoài biên và đổi policy sau tạo exercise; fixture không phải ngưỡng sản phẩm.
 
 Compatibility: chưa khẳng định có app/schema đang chạy. Nếu có dữ liệu cũ, migration thêm chat tables và policy snapshot phải bảo toàn artifacts; không bịa loại bài/ngưỡng cũ. Bài không xác định được policy cần kế hoạch backfill rõ trước áp constraint. Không thể khôi phục chat cũ vốn chỉ ở RAM. Task này chỉ cập nhật tài liệu, không migrate, commit hoặc push.
 

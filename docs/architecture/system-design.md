@@ -1,6 +1,6 @@
 # StudyCraft — Thiết kế kiến trúc MVP
 
-> **Cập nhật quyết định 2026-10-08:** [SPEC v3](../SPEC.md) thay thế chat RAM bằng lịch sử PostgreSQL, nhật ký/revisions vĩnh viễn và policy theo loại bài. Cấu trúc mã mục tiêu dùng src/studycraft tại SPEC §12; các path app/ và mô tả chat tạm bên dưới là baseline cũ, cần đồng bộ khi triển khai I-03/I-05.
+> **Cập nhật quyết định 2026-10-08:** [SPEC v3](../SPEC.md) thay thế chat RAM bằng lịch sử PostgreSQL, nhật ký/revisions vĩnh viễn và policy theo loại bài. Cấu trúc mã mục tiêu cập nhật ngày 2026-10-13 tại SPEC §12: backend ở apps/api/, UI ở apps/web/. Các mô tả chat tạm bên dưới vẫn là baseline cũ, cần đồng bộ khi triển khai I-03/I-05.
 
 **Trạng thái: Proposed — đề xuất, 2026-10-07.** Nguồn: [PRD](../requirements/prd.md), [18 user stories](../requirements/user-stories.md), [SPEC v2](../SPEC.md). Repo hiện có tài liệu, chưa có ứng dụng để kiểm chứng thiết kế.
 
@@ -10,10 +10,11 @@ Thiết kế phục vụ một người học trên máy cá nhân, bắt đầu
 
 ## 1. Thành phần và trách nhiệm
 
-**Monolith — một ứng dụng backend chia theo trách nhiệm**, không phải các dịch vụ triển khai riêng. Có ba tiến trình chính trên cùng máy: ứng dụng, PostgreSQL và runtime model.
+**Backend modular monolith tại apps/api/**; giao diện tổ chức riêng tại `apps/web/`, dùng cùng origin với API. PostgreSQL và runtime model chạy trên máy cá nhân. Worker/AI service riêng là vị trí mở rộng trong cấu trúc repo, chưa là tiến trình bắt buộc của MVP.
 
 - **Trình duyệt:** các khu vực Tài liệu, Luyện viết/Kết quả, Chat, Nhật ký. Jinja + HTML/CSS/JavaScript thuần; lấy JSON bằng fetch. Chat tạm trong RAM của tab. Không tự gửi câu hỏi sau sửa bài.
-- **Web/API FastAPI:** phục vụ `/`, `/static/*`, `/health`; transport đề xuất mới trong [OpenAPI](../api/openapi.json) dùng `/api/v1`, GET cho ba tool đọc và POST `/api/v1/tools/{name}` cho chín tool ghi, thay bố trí toàn-POST `/api/tools/{name}` trước đó. Kiểm Host/Origin/session/CSRF, giới hạn body, schema đầu vào và Problem HTTP; giữ tool allowlist và bất biến nghiệp vụ SPEC.
+- **Web — apps/web:** tổ chức `app/`, `features/`, `shared/ui/`, `lib/`; phục vụ `/` và assets cùng origin với API.
+- **API FastAPI — apps/api:** phục vụ `/health` và các thao tác nghiệp vụ; transport đề xuất mới trong [OpenAPI](../api/openapi.json) dùng `/api/v1`, GET cho ba tool đọc và POST `/api/v1/tools/{name}` cho chín tool ghi, thay bố trí toàn-POST `/api/tools/{name}` trước đó. Kiểm Host/Origin/session/CSRF, giới hạn body, schema đầu vào và Problem HTTP; giữ tool allowlist và bất biến nghiệp vụ SPEC.
 - **Nghiệp vụ hồ sơ và bài:** hồ sơ/mục tiêu, tài liệu, hoạt động, đề mẫu/đề riêng, nộp bài, bản viết lại và lịch sử. Lưu submission trước model; giữ material snapshot của đề cũ. Phục vụ US-001, US-002, US-003, US-004, US-005, US-006, US-010, US-011.
 - **Nghiệp vụ AI:** sửa bài và xử lý lỗi (US-007, US-008, US-009); hỏi đáp/trích khai báo (US-012, US-013); tóm tắt/đính chính nhật ký (US-014, US-015, US-016). Nhật ký đếm app events bằng code; model chỉ tổng hợp phần lời khai/đính chính.
 - **Runner giới hạn:** chạy đúng mode do thao tác UI chọn: feedback.generate, chat.send, journal.summarize hoặc journal.correct. Đọc snapshot → tạo context → gọi model → kiểm tra → lưu. Không planning tự do, chuỗi agent hoặc model tự chọn tool. Tối đa một run running/workspace.
@@ -21,7 +22,7 @@ Thiết kế phục vụ một người học trên máy cá nhân, bắt đầu
 - **Persistence — lớp truy cập dữ liệu:** PostgreSQL, SQLAlchemy async + psycopg và Alembic là bộ thư viện đề xuất. Transaction ngắn; mỗi request/pha transaction có session riêng, không giữ kết nối qua thời gian chờ model hoặc chia sẻ session giữa request. Theo [SQLAlchemy async](https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html).
 - **RAM cache + log metadata:** cache reply chat tạm; request/run IDs và các kết quả durable được tra trong database. Log mode, mã lỗi, thời gian và entity IDs; không log body/prompt/reply. Phục vụ US-017 và chẩn đoán các story khác.
 
-Các tên module `app/routes.py`, `tools.py`, `runner.py`, `context.py`, `journals.py`, `db.py`, `local_model.py` tham chiếu cấu trúc dự kiến trong SPEC; chưa tồn tại trong repo. Không thêm repository framework hoặc event bus.
+Paths mục tiêu theo SPEC §12: `apps/api/src/core/`, `apps/api/src/modules/<domain>/{router,service}.py`, `apps/api/src/shared/{db,execution,llm,http,contracts,prompts}/` và `apps/api/src/main.py`; UI tại `apps/web/{app,features,shared/ui,lib}/`. Migration/backend tests tại `apps/api/{migrations,tests}/`, e2e tại `tests/e2e/`, Compose local tại `infra/docker/compose.yaml`. Các path này chưa phải mã đã tồn tại.
 
 **Dữ liệu:** dùng các bảng SPEC mục 9: workspace/material/activity, exercise/submission/feedback, learning_report/event, journal/revision/correction, request/run/history_index. Bài gốc và phản hồi bất biến; bản viết lại có revision_of. Đính chính và journal revision mới cùng transaction; giữ bản trước.
 
