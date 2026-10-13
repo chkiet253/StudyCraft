@@ -1,10 +1,12 @@
 flowchart TB
-  %% Proposed task dependencies, 2026-10-08; not executed work.
-  subgraph S0["Sprint 0: Khung chạy được và hợp đồng thống nhất"]
-    R01["R01 - B - Bài tập nhập môn Python web"]
+  %% Updated 2026-10-13: Sprint 0 docs/research only; coding schedule remains TODO.
+  subgraph S0["Sprint 0: Research, tài liệu và chuẩn bị"]
+    R01["R01 - B - Nghiên cứu nhập môn Python web"]
     R02["R02 - A - Rà chênh lệch contracts và quyết định còn mở"]
     R03["R03 - A - Khả năng chạy model trên máy A"]
     T000["T000 - A - Đồng bộ OpenAPI, DDL/ER và ADR với SPEC v3"]
+  end
+  subgraph F0["Nền tảng coding sau Sprint 0: TODO A/B"]
     T001["T001 - A - Package src, app factory và config"]
     T002["T002 - A - Postgres, migration nền và health"]
     T003["T003 - B - Web shell và panel riêng"]
